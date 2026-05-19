@@ -9,14 +9,26 @@
 body{font-family:system-ui,-apple-system,sans-serif;background:#EDECEA;min-height:100vh}
 
 /* HEADER */
-#app-header{background:#1A2A4A;color:#fff;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
-#app-header h1{font-size:17px;font-weight:700;letter-spacing:.3px}
+#app-header{background:#1A2A4A;color:#fff;padding:10px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.header-left{display:flex;flex-direction:column;gap:2px}
+#app-header h1{font-size:17px;font-weight:700;letter-spacing:.3px;line-height:1.2}
+#role-badge{font-size:11px;color:rgba(255,255,255,.6);font-weight:400;display:none}
+#role-badge::before{content:'Role: ';font-weight:600;opacity:.8}
 .phase-stepper{display:flex;gap:6px;align-items:center}
 .phase-pip{padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;background:rgba(255,255,255,.15);color:rgba(255,255,255,.55);cursor:default;transition:all .2s}
 .phase-pip.active{background:#fff;color:#1A2A4A}
 .phase-pip.done{background:rgba(255,255,255,.3);color:#fff;cursor:pointer}
 #btn-reset{background:none;border:1px solid rgba(255,255,255,.3);color:rgba(255,255,255,.7);font-size:12px;padding:4px 10px;border-radius:4px;cursor:pointer;display:none}
 #btn-reset:hover{background:rgba(255,255,255,.1)}
+/* Definitions toggle + panel */
+#btn-defs{background:none;border:1px solid rgba(255,255,255,.25);color:rgba(255,255,255,.75);font-size:11.5px;font-weight:600;padding:4px 11px;border-radius:4px;cursor:pointer;display:none;white-space:nowrap}
+#btn-defs:hover{background:rgba(255,255,255,.1)}
+#defs-panel{display:none;position:sticky;top:46px;z-index:99;background:#162440;border-bottom:2px solid rgba(255,255,255,.08);padding:11px 24px;flex-wrap:wrap;gap:0}
+.def-item{display:flex;align-items:flex-start;gap:9px;padding:6px 28px 6px 0;min-width:210px}
+.def-swatch{width:10px;height:10px;border-radius:2px;flex-shrink:0;margin-top:3px}
+.def-label{font-size:11.5px;color:#fff}
+.def-label strong{display:block;font-size:12px;font-weight:700;margin-bottom:1px}
+.def-label span{opacity:.6;font-size:10.5px;line-height:1.4}
 
 /* CONTAINER */
 .container{max-width:960px;margin:0 auto;padding:24px 16px}
@@ -186,14 +198,36 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#EDECEA;min-heigh
 <body>
 
 <div id="app-header">
-  <h1>SFWI AI Routing Workshop</h1>
-  <div style="display:flex;align-items:center;gap:12px">
+  <div class="header-left">
+    <h1>SFWI AI Routing Workshop</h1>
+    <div id="role-badge"></div>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <button id="btn-defs" onclick="toggleDefs()">Definitions ▾</button>
     <div class="phase-stepper">
       <div class="phase-pip active" id="pip1">1 · Role</div>
       <div class="phase-pip" id="pip2">2 · Routing</div>
       <div class="phase-pip" id="pip3">3 · Skills</div>
     </div>
     <button id="btn-reset" onclick="resetAll()">↺ Start Over</button>
+  </div>
+</div>
+<div id="defs-panel">
+  <div class="def-item">
+    <div class="def-swatch" style="background:#7B2020"></div>
+    <div class="def-label"><strong>Human-Led</strong><span>Human does the work; AI may assist in prep only</span></div>
+  </div>
+  <div class="def-item">
+    <div class="def-swatch" style="background:#B85520"></div>
+    <div class="def-label"><strong>Human-in-the-Loop (HITL)</strong><span>AI drafts or processes; human reviews every output before use</span></div>
+  </div>
+  <div class="def-item">
+    <div class="def-swatch" style="background:#9B7200"></div>
+    <div class="def-label"><strong>Human-on-the-Loop (HOTL)</strong><span>AI operates autonomously; human monitors and intervenes when needed</span></div>
+  </div>
+  <div class="def-item">
+    <div class="def-swatch" style="background:#4a4a4a"></div>
+    <div class="def-label"><strong>Full Auto</strong><span>AI handles end-to-end; periodic human spot-check only</span></div>
   </div>
 </div>
 
@@ -1214,8 +1248,22 @@ function showPhase(p) {
   document.getElementById('pip2').className = 'phase-pip' + (p==='routing' ? ' active' : p==='skills' ? ' done' : '');
   document.getElementById('pip3').className = 'phase-pip' + (p==='skills' ? ' active' : '');
   document.getElementById('btn-reset').style.display = p==='role' ? 'none' : '';
+  // Role name badge — show when past role selection
+  const rb = document.getElementById('role-badge');
+  if (rb) { rb.textContent = APP.role || ''; rb.style.display = (p !== 'role' && APP.role) ? 'block' : 'none'; }
+  // Definitions button — only visible during routing/skills
+  const db = document.getElementById('btn-defs');
+  if (db) db.style.display = p === 'role' ? 'none' : 'inline-block';
   if (p==='routing') renderRoutingPhase();
   if (p==='skills') renderSkillSortPhase();
+}
+
+function toggleDefs() {
+  const panel = document.getElementById('defs-panel');
+  const btn   = document.getElementById('btn-defs');
+  const open  = panel.style.display === 'flex';
+  panel.style.display = open ? 'none' : 'flex';
+  btn.textContent = open ? 'Definitions ▾' : 'Definitions ▴';
 }
 
 function resetAll() {
