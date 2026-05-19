@@ -1,0 +1,1847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SFWI AI Routing Workshop</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#EDECEA;min-height:100vh}
+
+/* HEADER */
+#app-header{background:#1A2A4A;color:#fff;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+#app-header h1{font-size:17px;font-weight:700;letter-spacing:.3px}
+.phase-stepper{display:flex;gap:6px;align-items:center}
+.phase-pip{padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;background:rgba(255,255,255,.15);color:rgba(255,255,255,.55);cursor:default;transition:all .2s}
+.phase-pip.active{background:#fff;color:#1A2A4A}
+.phase-pip.done{background:rgba(255,255,255,.3);color:#fff;cursor:pointer}
+#btn-reset{background:none;border:1px solid rgba(255,255,255,.3);color:rgba(255,255,255,.7);font-size:12px;padding:4px 10px;border-radius:4px;cursor:pointer;display:none}
+#btn-reset:hover{background:rgba(255,255,255,.1)}
+
+/* CONTAINER */
+.container{max-width:960px;margin:0 auto;padding:24px 16px}
+
+/* PHASE 1 — ROLE */
+#phase-role{max-width:980px;margin:0 auto;background:#fff;border-radius:10px;box-shadow:0 3px 20px rgba(0,0,0,.12);overflow:hidden}
+.role-phase-header{background:#1A2A4A;color:#fff;padding:22px 28px}
+.role-phase-header h2{font-size:20px;font-weight:700;margin-bottom:4px}
+.role-phase-header p{font-size:13px;opacity:.75}
+.cat-section{padding:0 0 4px}
+.cat-label{font-size:10.5px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.8px;padding:8px 20px;background:#1A2A4A;opacity:.85}
+.role-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:0;border-bottom:1px solid #EBEBE7}
+.role-card{background:#fff;border:none;border-right:1px solid #EBEBE7;padding:13px 16px;cursor:pointer;transition:background .12s;text-align:left}
+.role-card:hover{background:#F5F4F2}
+.role-card.selected{background:#EFF4F9;box-shadow:inset 3px 0 0 #1A2A4A}
+.role-card .r-name{font-size:13px;font-weight:600;color:#1A2A4A;line-height:1.35}
+.role-card .r-workers{font-size:10.5px;color:#999;margin-top:3px}
+
+/* PHASE 2 — ROUTING */
+#phase-routing{display:none}
+.cluster-progress{background:#fff;border-radius:10px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+.cluster-progress .cp-label{font-size:13px;color:#555;white-space:nowrap}
+.cp-pips{display:flex;gap:5px;flex:1}
+.cp-pip{width:24px;height:24px;border-radius:50%;border:2px solid #ccc;background:#eee;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;color:#aaa;transition:all .2s}
+.cp-pip.done{background:#1A2A4A;border-color:#1A2A4A;color:#fff}
+.cp-pip.active{background:#fff;border-color:#1A2A4A;color:#1A2A4A}
+.cluster-card{background:#fff;border-radius:10px;padding:18px 20px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+.cluster-card h2{font-size:18px;font-weight:700;color:#1A2A4A;margin-bottom:4px}
+.cluster-card p{font-size:13px;color:#666}
+.questions-wrap{background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.07);overflow:hidden;margin-bottom:12px}
+.dir-bar{display:grid;grid-template-columns:200px 1fr;background:#f5f4f2;border-bottom:1px solid #e0dedd}
+.dir-bar .dir-spacer{border-right:1px solid #e0dedd}
+.dir-bar .dir-text{text-align:center;font-size:11px;color:#888;padding:6px 0;letter-spacing:.3px}
+.q-row{display:grid;grid-template-columns:200px 1fr;border-bottom:1px solid #f0efed;align-items:stretch}
+.q-row:last-child{border-bottom:none}
+.q-label{padding:12px 14px;border-right:1px solid #e0dedd;display:flex;flex-direction:column;justify-content:center;transition:background .2s,border-left .2s}
+.q-label .q-num{font-size:10px;color:#aaa;font-weight:600;margin-bottom:2px}
+.q-label .q-name{font-size:13px;font-weight:700;color:#1A2A4A;line-height:1.2}
+.q-label .q-text{font-size:11px;color:#777;margin-top:3px;line-height:1.35}
+.q-label.floor-hl{border-left:4px solid #7B2020;background:#fdf5f5}
+.q-label.floor-hitl{border-left:4px solid #B85520;background:#fdf8f5}
+.q-label.floor-hotl{border-left:4px solid #9B7200;background:#fdfbf0}
+.answers-row{display:grid;grid-template-columns:repeat(4,1fr)}
+.a-cell{padding:12px 11px 10px;cursor:pointer;transition:filter .12s;position:relative;display:flex;flex-direction:column;border-right:1px solid rgba(0,0,0,.08);user-select:none;-webkit-user-select:none;min-height:88px}
+.a-cell:last-child{border-right:none}
+.a-cell:hover{filter:brightness(.91)}
+.a-cell.selected{outline:3px solid #1A2A4A;outline-offset:-3px;z-index:2}
+.a-cell.selected::after{content:'✓';position:absolute;top:5px;right:8px;font-size:14px;font-weight:800;pointer-events:none}
+.a-cell.hl.selected::after,.a-cell.hitl.selected::after,.a-cell.hotl.selected::after{color:#fff}
+.a-cell.none-min.selected::after{color:#1A2A4A}
+.a-cell .a-label{font-size:12px;font-weight:700;line-height:1.3;margin-bottom:4px;padding-right:16px}
+.a-cell .a-sub{font-size:10.5px;line-height:1.35;opacity:.82;flex:1}
+.a-cell .a-badge{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-top:7px;border-top:1px solid rgba(255,255,255,.25);padding-top:5px}
+.a-cell.none-min .a-badge{border-top-color:rgba(0,0,0,.12);color:#888}
+/* Floor visuals — cells overcome by higher-priority answer are dimmed but still clickable */
+.a-cell.floor-locked:not(.selected){opacity:.22;filter:grayscale(55%)}
+.a-cell.floor-ceil-hl  {box-shadow:inset -4px 0 0 #7B2020}
+.a-cell.floor-ceil-hitl{box-shadow:inset -4px 0 0 #B85520}
+.a-cell.floor-ceil-hotl{box-shadow:inset -4px 0 0 #9B7200}
+.a-cell.selected.floor-ceil-hl,.a-cell.selected.floor-ceil-hitl,.a-cell.selected.floor-ceil-hotl{outline:3px solid #1A2A4A;outline-offset:-3px}
+
+.result-bar{background:#fff;border-radius:10px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+.result-label-sm{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#999;white-space:nowrap}
+.result-badge{padding:7px 20px;border-radius:20px;font-size:14px;font-weight:700;color:#fff;transition:background .2s}
+.result-constraint{font-size:12px;color:#777;font-style:italic;flex:1}
+.routing-nav{display:flex;gap:10px;justify-content:flex-end}
+.btn{padding:9px 20px;border-radius:7px;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:all .15s}
+.btn-sec{background:#e8e7e4;color:#333}
+.btn-sec:hover{background:#d8d7d4}
+.btn-pri{background:#1A2A4A;color:#fff}
+.btn-pri:hover{background:#253d68}
+.btn-pri:disabled{background:#ccc;cursor:not-allowed}
+
+/* GROUP DIVIDERS */
+.group-divider{padding:8px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:#fff;display:flex;justify-content:space-between;align-items:center}
+.group-divider.g1{background:#5a1818}
+.group-divider.g2{background:#7a3810}
+.group-divider.g3{background:#6a5000}
+.group-divider .g-desc{font-size:10px;font-weight:400;opacity:.8;text-transform:none;letter-spacing:0}
+
+/* PHASE 3 — SKILL SORT */
+#phase-skills{display:none}
+.ss-header{margin-bottom:16px}
+.ss-header h2{font-size:20px;font-weight:700;color:#1A2A4A}
+.ss-header p{font-size:13px;color:#666;margin-top:4px}
+
+/* Pool */
+.ss-pool-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#888;margin-bottom:9px;display:flex;align-items:center;gap:8px}
+#pool-drop-zone{background:#fff;border:2px dashed #C4C3BD;border-radius:10px;padding:14px;min-height:76px;display:flex;flex-wrap:wrap;gap:7px;align-content:flex-start;transition:border-color .12s,background .12s;margin-bottom:6px}
+#pool-drop-zone.drag-over{border-color:#888;background:#F5F4F2}
+
+/* Category legend */
+.cat-legend{display:flex;gap:18px;margin-bottom:22px;font-size:11px;color:#888}
+.cat-legend span{display:flex;align-items:center;gap:5px}
+.legend-dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+
+/* Sequence bar */
+.seq-bar{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:10.5px;font-weight:700;color:#AAA;text-transform:uppercase;letter-spacing:.6px}
+.seq-line{flex:1;height:2px;background:linear-gradient(to right,#7B2020 0%,#B85520 40%,#9B7200 75%,#CCC 100%);border-radius:2px;position:relative}
+.seq-line::after{content:'▶';position:absolute;right:-6px;top:-4px;font-size:9px;color:#CCC}
+
+/* Cluster columns grid */
+#ss-columns{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px;align-items:start}
+.cluster-col{border-radius:10px;overflow:visible;box-shadow:0 1px 4px rgba(0,0,0,.10);display:flex;flex-direction:column}
+.cluster-col-header{border-radius:10px 10px 0 0;overflow:hidden;padding:12px 14px 11px}
+.cluster-col-header .bucket-badge{display:inline-block;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;color:rgba(255,255,255,.8);background:rgba(0,0,0,.20);border-radius:3px;padding:2px 6px;margin-bottom:7px}
+.cluster-col-header h3{font-size:13px;font-weight:700;color:#fff;line-height:1.3}
+
+/* Drop zones */
+.cluster-drop-zone{background:#FAF9F7;flex:1;min-height:190px;padding:10px;display:flex;flex-direction:column;gap:6px;align-content:flex-start;transition:background .12s;overflow:hidden}
+.cluster-drop-zone.drag-over{background:#F0EEE8}
+.cluster-drop-zone .empty-hint{font-size:11px;color:#C8C7C0;text-align:center;padding:18px 8px;font-style:italic;pointer-events:none}
+
+/* Skill pills */
+.skill-pill{padding:6px 9px;border-radius:5px;font-size:12px;font-weight:600;color:#fff;cursor:grab;user-select:none;display:flex;align-items:center;justify-content:space-between;gap:6px;transition:opacity .2s}
+.skill-pill:active{cursor:grabbing}
+.skill-pill.dragging{opacity:.4}
+.skill-pill.dropped{text-decoration:line-through;opacity:.45}
+.pill-drop-confirm{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.pill-drop-confirm label{font-size:10px;opacity:.85;cursor:pointer;white-space:nowrap}
+.pill-drop-confirm input{cursor:pointer;width:13px;height:13px}
+
+/* Gap */
+.gap-wrap{position:relative;background:#F2F1EE;border-top:1px solid #E4E3DF;padding:8px 10px}
+.gap-wrap::before{content:attr(data-tip);position:absolute;bottom:calc(100% + 7px);left:0;right:0;background:#1A2A4A;color:rgba(255,255,255,.92);font-size:11.5px;line-height:1.55;padding:9px 11px;border-radius:7px;opacity:0;pointer-events:none;transition:opacity .15s;z-index:200;white-space:normal;box-shadow:0 3px 12px rgba(0,0,0,.22)}
+.gap-wrap::after{content:'';position:absolute;bottom:calc(100% + 1px);left:14px;border:5px solid transparent;border-top-color:#1A2A4A;opacity:0;pointer-events:none;transition:opacity .15s;z-index:200}
+.gap-wrap:hover::before,.gap-wrap:hover::after{opacity:1}
+.gap-btn{background:none;border:1px dashed #aaa;color:#888;font-size:11px;padding:4px 10px;border-radius:5px;cursor:pointer;width:100%}
+.gap-btn:hover{border-color:#555;color:#444}
+.gap-input-wrap{display:flex;gap:6px;margin-top:6px}
+.gap-input-wrap input{flex:1;font-size:12px;padding:4px 8px;border:1px solid #ccc;border-radius:4px}
+.gap-input-wrap button{font-size:11px;padding:4px 10px;border:none;border-radius:4px;cursor:pointer;background:#1A2A4A;color:#fff}
+.gap-pill{border:2px dashed rgba(255,255,255,.6)!important}
+
+/* SUMMARY TABLE */
+.ss-summary{margin-top:24px}
+.ss-summary h3{font-size:14px;font-weight:700;color:#1A2A4A;margin-bottom:10px}
+.summary-table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.07);font-size:12px}
+.summary-table th{background:#1A2A4A;color:#fff;padding:9px 12px;text-align:left;font-weight:600}
+.summary-table td{padding:8px 12px;border-bottom:1px solid #f0efed;vertical-align:middle}
+.summary-table tr:last-child td{border-bottom:none}
+.summary-table tr:hover td{background:#fafaf9}
+.summary-table tr.skill-dropped td{opacity:.55;text-decoration:line-through}
+.summary-table tr.skill-dropped td:last-child{text-decoration:none}
+.tb-badge{padding:2px 10px;border-radius:10px;color:#fff;font-size:11px;font-weight:700;white-space:nowrap}
+.tb-badge.fate-deepens{background:#1A2A4A}
+.tb-badge.fate-persists{background:#B85520}
+.tb-badge.fate-drop{background:#9B7200}
+.tb-badge.fate-dropped{background:#7B2020}
+.tb-badge.fate-unassigned{background:#aaa}
+.tb-badge.fate-new{background:#2C6E8A}
+.export-row{margin-top:20px;padding-top:16px;border-top:1px solid #e8e7e4;display:flex;justify-content:flex-end}
+.btn-export{background:#1A2A4A;color:#fff;border:none;border-radius:6px;padding:10px 22px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:7px}
+.btn-export:hover{background:#2a3d5e}
+.btn-export svg{flex-shrink:0}
+
+/* SKILL CAT COLORS */
+.cat-foundational{background:#2C5F8A}
+.cat-core{background:#5A7A3A}
+.cat-baseline{background:#7A5A2A}
+.cat-gap{background:#555;font-style:italic}
+
+/* UTILITY */
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<div id="app-header">
+  <h1>SFWI AI Routing Workshop</h1>
+  <div style="display:flex;align-items:center;gap:12px">
+    <div class="phase-stepper">
+      <div class="phase-pip active" id="pip1">1 · Role</div>
+      <div class="phase-pip" id="pip2">2 · Routing</div>
+      <div class="phase-pip" id="pip3">3 · Skills</div>
+    </div>
+    <button id="btn-reset" onclick="resetAll()">↺ Start Over</button>
+  </div>
+</div>
+
+<div class="container">
+  <!-- PHASE 1 -->
+  <div id="phase-role"></div>
+  <!-- PHASE 2 -->
+  <div id="phase-routing" style="display:none"></div>
+  <!-- PHASE 3 -->
+  <div id="phase-skills" style="display:none"></div>
+</div>
+
+<script>
+const ROLE_CATEGORIES = {
+  tech: {
+    label: "Technology & Knowledge Work",
+    roles: ["Human Resources Specialists", "Software Developers", "Data Scientists", "Cybersecurity Analysts", "Product Managers"],
+  },
+  ops: {
+    label: "Operations & Logistics",
+    roles: ["Transportation Storage and Distribution Managers", "Truck Drivers", "Stockers and Order Fillers", "Laborers and Material Movers", "Industrial Machinery Mechanics", "Inspectors Testers and Samplers", "Assemblers and Fabricators", "Packers and Packagers", "Maintenance and Repair Workers", "Transportation Supervisors", "Shipping & Receiving Clerks"],
+  },
+  retail: {
+    label: "Retail & Customer Service",
+    roles: ["Customer Service Representatives", "Customer Service Managers", "Retail Salespersons", "First-Line Supervisors of Retail Sales Workers", "Cashiers", "Receptionists and Information Clerks", "Security Guards"],
+  },
+  biz: {
+    label: "Business & Management",
+    roles: ["Financial Analysts", "Financial Managers", "Project Management Specialists", "Purchasing Agents", "Sales Managers", "Sales Representatives", "Production and Expediting Clerks"],
+  },
+};
+
+const WORKSHOP_ROLES = {
+  "Human Resources Specialists": {
+    icon: "🧑‍🤝‍🧑", workers: "~900K workers", cat: "tech",
+    clusters: [
+      { id: "hr-sourcing", label: "Sourcing & Candidate Search", description: "Finding, attracting, and initially screening job candidates through various channels." },
+      { id: "hr-evaluation", label: "Candidate Evaluation & Selection", description: "Interviewing, testing, reviewing qualifications, and making hiring decisions." },
+      { id: "hr-communication", label: "Applicant Communication & Onboarding", description: "Informing applicants, updating status, processing hires, and conducting orientations." },
+      { id: "hr-employee-relations", label: "Employee Relations & Workplace Issues", description: "Addressing employee concerns, handling complaints, and managing separations." },
+      { id: "hr-policy-compliance", label: "Policy, Compliance & Management Advisory", description: "Developing HR policies, maintaining legal knowledge, and advising management." },
+      { id: "hr-records-admin", label: "HR Data, Records & Benefits", description: "Maintaining employment records, analyzing HR data, and administering benefits." },
+    ],
+    skills: [
+      { name: "Communication", cat: "Foundational & Leadership Skills" },
+      { name: "Writing", cat: "Foundational & Leadership Skills" },
+      { name: "Microsoft Excel", cat: "Baseline Applied Skills" },
+      { name: "Problem Solving", cat: "Foundational & Leadership Skills" },
+      { name: "Human Resources Information System (HRIS)", cat: "Core Role-Specific Skills" },
+      { name: "Organizational Skills", cat: "Foundational & Leadership Skills" },
+      { name: "Employee Relations", cat: "Core Role-Specific Skills" },
+      { name: "Project Management", cat: "Foundational & Leadership Skills" },
+      { name: "Business Administration", cat: "Foundational & Leadership Skills" },
+      { name: "Employee Onboarding", cat: "Core Role-Specific Skills" },
+      { name: "Human Resource Management", cat: "Core Role-Specific Skills" },
+      { name: "Training And Development", cat: "Core Role-Specific Skills" },
+      { name: "Data Analysis", cat: "Baseline Applied Skills" },
+      { name: "Employee Engagement", cat: "Core Role-Specific Skills" },
+      { name: "Change Management", cat: "Foundational & Leadership Skills" },
+      { name: "Payroll Processing", cat: "Core Role-Specific Skills" },
+      { name: "Workforce Planning", cat: "Core Role-Specific Skills" },
+      { name: "Benefits Enrollment Processes", cat: "Core Role-Specific Skills" },
+      { name: "Benefits Administration", cat: "Core Role-Specific Skills" },
+    ],
+  },
+  "Software Developers": {
+    icon: "👨‍💻", workers: "~4.4M workers", cat: "tech",
+    clusters: [
+      { id: "sd-requirements", label: "Requirements & Analysis", description: "Gathering user needs, analyzing feasibility, and defining system requirements." },
+      { id: "sd-design", label: "Design & Development", description: "Designing, coding, and modifying software systems using engineering principles." },
+      { id: "sd-testing", label: "Testing & Quality Assurance", description: "Developing and directing software testing, validation, and monitoring procedures." },
+      { id: "sd-collaboration", label: "Collaboration & Communication", description: "Conferring with stakeholders, preparing reports, and coordinating across teams." },
+      { id: "sd-leadership", label: "Supervision & Training", description: "Supervising technical personnel and training end users." },
+    ],
+    skills: [
+      { name: "Agile Methodology", cat: "Core Role-Specific Skills" },
+      { name: "Business Process", cat: "Baseline Applied Skills" },
+      { name: "Business Requirements", cat: "Baseline Applied Skills" },
+      { name: "CI/CD", cat: "Core Role-Specific Skills" },
+      { name: "Communication", cat: "Foundational & Leadership Skills" },
+      { name: "Debugging", cat: "Core Role-Specific Skills" },
+      { name: "DevOps", cat: "Core Role-Specific Skills" },
+      { name: "Git (Version Control System)", cat: "Core Role-Specific Skills" },
+      { name: "Innovation", cat: "Foundational & Leadership Skills" },
+      { name: "Scalability", cat: "Core Role-Specific Skills" },
+      { name: "Scripting", cat: "Core Role-Specific Skills" },
+      { name: "Technical Documentation", cat: "Core Role-Specific Skills" },
+      { name: "Troubleshooting (Problem Solving)", cat: "Baseline Applied Skills" },
+      { name: "Unit Testing", cat: "Core Role-Specific Skills" },
+    ],
+  },
+  "Data Scientists": {
+    icon: "📊", workers: "~200K workers", cat: "tech",
+    clusters: [
+      { id: "ds-dataprep", label: "Data Preparation & Processing", description: "Cleaning, manipulating, and processing large datasets for analysis." },
+      { id: "ds-modeling", label: "Modeling & Algorithm Development", description: "Building, testing, and refining predictive models and machine learning applications." },
+      { id: "ds-analysis", label: "Business Analysis & Problem Identification", description: "Identifying business problems and determining analytical approaches." },
+      { id: "ds-communication", label: "Communication & Stakeholder Engagement", description: "Presenting findings, creating visualizations, and recommending solutions to stakeholders." },
+    ],
+    skills: [
+      { name: "Python (Programming Language)", cat: "Core Role-Specific Skills" },
+      { name: "Communication", cat: "Foundational & Leadership Skills" },
+      { name: "Data Analysis", cat: "Baseline Applied Skills" },
+      { name: "Statistics", cat: "Core Role-Specific Skills" },
+      { name: "Algorithms", cat: "Core Role-Specific Skills" },
+      { name: "SQL (Programming Language)", cat: "Core Role-Specific Skills" },
+      { name: "Research", cat: "Foundational & Leadership Skills" },
+      { name: "Data Visualization", cat: "Core Role-Specific Skills" },
+      { name: "Problem Solving", cat: "Foundational & Leadership Skills" },
+      { name: "Big Data", cat: "Core Role-Specific Skills" },
+      { name: "Data Modeling", cat: "Core Role-Specific Skills" },
+      { name: "Decision Making", cat: "Foundational & Leadership Skills" },
+      { name: "Applied Mathematics", cat: "Baseline Applied Skills" },
+      { name: "Technical Documentation", cat: "Core Role-Specific Skills" },
+    ],
+  },
+  "Cybersecurity Analysts": {
+    icon: "🔒", workers: "~170K workers", cat: "tech",
+    clusters: [
+      { id: "cyber-planning", label: "Security Planning & Policy", description: "Developing security plans, policies, and procedures to protect information systems." },
+      { id: "cyber-monitoring", label: "Threat Monitoring & Detection", description: "Monitoring systems and reports to detect viruses, breaches, and unauthorized access." },
+      { id: "cyber-implementation", label: "Security Implementation & Maintenance", description: "Implementing encryption, firewalls, and access controls; modifying security configurations." },
+      { id: "cyber-assessment", label: "Risk Assessment & Testing", description: "Performing risk assessments and executing tests to ensure security measures function properly." },
+      { id: "cyber-response", label: "Incident Response & Compliance", description: "Reviewing violations, conferring with users, and enforcing security procedures." },
+      { id: "cyber-training", label: "Security Awareness & Training", description: "Training users and promoting security awareness across the organization." },
+    ],
+    skills: [
+      { name: "Communication", cat: "Foundational & Leadership Skills" },
+      { name: "Problem Solving", cat: "Foundational & Leadership Skills" },
+      { name: "Risk Analysis", cat: "Core Role-Specific Skills" },
+      { name: "Security Controls", cat: "Core Role-Specific Skills" },
+      { name: "Incident Response", cat: "Core Role-Specific Skills" },
+      { name: "Security Policies", cat: "Core Role-Specific Skills" },
+      { name: "Project Management", cat: "Foundational & Leadership Skills" },
+      { name: "Operating Systems", cat: "Core Role-Specific Skills" },
+      { name: "Governance", cat: "Foundational & Leadership Skills" },
+      { name: "Security Information And Event Management (SIEM)", cat: "Core Role-Specific Skills" },
+      { name: "Vulnerability Management", cat: "Core Role-Specific Skills" },
+      { name: "Information Systems Security", cat: "Core Role-Specific Skills" },
+      { name: "Application Security", cat: "Core Role-Specific Skills" },
+      { name: "Agile Methodology", cat: "Core Role-Specific Skills" },
+    ],
+  },
+  "Product Managers": {
+    icon: "🧭", workers: "~500K workers", cat: "tech",
+    clusters: [
+      { id: "pm-strategy", label: "Marketing Strategy & Planning", description: "Developing marketing strategies, pricing, and sales forecasting." },
+      { id: "pm-research", label: "Market Research & Analysis", description: "Initiating and analyzing market research, surveys, and competitive intelligence." },
+      { id: "pm-coordination", label: "Campaign Coordination & Promotion", description: "Coordinating marketing activities, promotional events, and trade shows." },
+      { id: "pm-product", label: "Product Development & Sustainability", description: "Consulting on product specifications, packaging, and environmental sustainability." },
+      { id: "pm-stakeholders", label: "Stakeholder & Vendor Management", description: "Negotiating contracts, managing distribution, and advising on market factors." },
+    ],
+    skills: [
+      { name: "Agile Methodology", cat: "Core Role-Specific Skills" },
+      { name: "Communication", cat: "Foundational & Leadership Skills" },
+      { name: "Decision Making", cat: "Foundational & Leadership Skills" },
+      { name: "Go-to-Market Strategy", cat: "Core Role-Specific Skills" },
+      { name: "Influencing Skills", cat: "Foundational & Leadership Skills" },
+      { name: "Innovation", cat: "Foundational & Leadership Skills" },
+      { name: "Management", cat: "Foundational & Leadership Skills" },
+      { name: "Market Research", cat: "Core Role-Specific Skills" },
+      { name: "Marketing", cat: "Baseline Applied Skills" },
+      { name: "Operations", cat: "Baseline Applied Skills" },
+      { name: "Planning", cat: "Foundational & Leadership Skills" },
+      { name: "Presentations", cat: "Baseline Applied Skills" },
+      { name: "Prioritization", cat: "Foundational & Leadership Skills" },
+      { name: "Problem Solving", cat: "Foundational & Leadership Skills" },
+      { name: "Product Lifecycle Management", cat: "Core Role-Specific Skills" },
+      { name: "Product Marketing", cat: "Core Role-Specific Skills" },
+      { name: "Product Requirements", cat: "Core Role-Specific Skills" },
+      { name: "Product Strategy", cat: "Core Role-Specific Skills" },
+      { name: "Project Management", cat: "Baseline Applied Skills" },
+      { name: "Research", cat: "Foundational & Leadership Skills" },
+      { name: "Strategic Planning", cat: "Foundational & Leadership Skills" },
+      { name: "User Story", cat: "Core Role-Specific Skills" },
+      { name: "Workflow Management", cat: "Foundational & Leadership Skills" },
+    ],
+  },
+  "Transportation Storage and Distribution Managers": {
+    icon: "🏗️", workers: "~165K workers", cat: "ops",
+    clusters: [
+      { id: "tsd-operations", label: "Warehouse & Logistics Operations", description: "Supervising receiving, storing, shipping activities, and directing inbound/outbound operations." },
+      { id: "tsd-planning", label: "Logistics Planning & Analysis", description: "Analyzing logistics, routes, and financial impacts to optimize transportation and distribution." },
+      { id: "tsd-compliance", label: "Safety, Compliance & Risk Management", description: "Developing safety programs, monitoring compliance, and managing emergency procedures." },
+      { id: "tsd-inventory", label: "Inventory & Facility Management", description: "Monitoring inventory levels, inspecting facilities, and managing equipment and infrastructure." },
+      { id: "tsd-admin", label: "Administration & Reporting", description: "Managing budgets, maintaining records, and preparing management reports." },
+      { id: "tsd-stakeholders", label: "Stakeholder Coordination", description: "Collaborating with departments, resolving issues, and negotiating with carriers and vendors." },
+    ],
+    skills: [
+      { name: "Communication", cat: "Foundational & Leadership Skills" },
+      { name: "Cycle Counting", cat: "Core Role-Specific Skills" },
+      { name: "Inventory Management", cat: "Core Role-Specific Skills" },
+      { name: "Leadership", cat: "Foundational & Leadership Skills" },
+      { name: "Logistics", cat: "Core Role-Specific Skills" },
+      { name: "Logistics Management", cat: "Core Role-Specific Skills" },
+      { name: "Microsoft Office", cat: "Baseline Applied Skills" },
+      { name: "Operations", cat: "Baseline Applied Skills" },
+      { name: "Process Improvement", cat: "Baseline Applied Skills" },
+      { name: "Profit And Loss (P&L) Management", cat: "Foundational & Leadership Skills" },
+      { name: "Project Management", cat: "Baseline Applied Skills" },
+      { name: "Safety Standards", cat: "Baseline Applied Skills" },
+      { name: "SAP Applications", cat: "Baseline Applied Skills" },
+      { name: "Supply Chain Management", cat: "Baseline Applied Skills" },
+      { name: "Warehouse Management", cat: "Core Role-Specific Skills" },
+      { name: "Warehousing", cat: "Core Role-Specific Skills" },
+    ],
+  },
+  "Truck Drivers": {
+    icon: "🚛", workers: "~2M workers", cat: "ops",
+    clusters: [
+      { id: "td-driving", label: "Vehicle Operation & Navigation", description: "Driving trucks, planning routes, and maneuvering vehicles for loading and unloading." },
+      { id: "td-cargo", label: "Cargo Handling & Securement", description: "Loading, unloading, securing, and inspecting cargo for transport." },
+      { id: "td-inspection", label: "Vehicle Inspection & Maintenance", description: "Inspecting vehicles, performing basic maintenance, and handling roadside repairs." },
+      { id: "td-admin", label: "Documentation & Compliance", description: "Maintaining logs, checking documentation, collecting receipts, and reporting incidents." },
+    ],
+    skills: [
+      { name: "Customer Service", cat: "Baseline Applied Skills" },
+      { name: "Communication", cat: "Foundational & Leadership Skills" },
+      { name: "Lifting Ability", cat: "Baseline Applied Skills" },
+      { name: "Pre-Trip And Post-Trip Vehicle Inspections", cat: "Core Role-Specific Skills" },
+      { name: "Vehicle Maintenance", cat: "Core Role-Specific Skills" },
+      { name: "Dry Van Truck Operation", cat: "Core Role-Specific Skills" },
+      { name: "Package Delivery", cat: "Core Role-Specific Skills" },
+      { name: "Safety Standards", cat: "Core Role-Specific Skills" },
+      { name: "General Mathematics", cat: "Baseline Applied Skills" },
+      { name: "Smartphone Operation", cat: "Baseline Applied Skills" },
+      { name: "Defensive Driving", cat: "Core Role-Specific Skills" },
+      { name: "Physical Stamina", cat: "Baseline Applied Skills" },
+      { name: "Map Reading", cat: "Baseline Applied Skills" },
+      { name: "Bill Of Lading", cat: "Core Role-Specific Skills" },
+    ],
+  },
+  "Stockers and Order Fillers": {
+    icon: "📦", workers: "~3M workers", cat: "ops",
+    clusters: [
+      { id: "sof-stocking", label: "Stocking & Shelving", description: "Receiving, unpacking, and stocking merchandise on shelves, racks, and display areas." },
+      { id: "sof-orderfill", label: "Order Fulfillment & Distribution", description: "Picking, packing, and issuing merchandise based on orders and requisitions." },
+      { id: "sof-inventory", label: "Inventory Management & Record-Keeping", description: "Counting stock, tracking inventory, recording data, and managing reorders." },
+      { id: "sof-quality", label: "Quality Control & Maintenance", description: "Inspecting stock for defects, cleaning areas, and maintaining compliance with safety standards." },
+      { id: "sof-customer", label: "Customer Service & Merchandising", description: "Assisting customers, setting up displays, pricing merchandise, and processing transactions." },
+    ],
+    skills: [
+      { name: "Customer Service", cat: "Baseline Applied Skills" },
+      { name: "Warehousing", cat: "Core Role-Specific Skills" },
+      { name: "Merchandising", cat: "Core Role-Specific Skills" },
+      { name: "Communication", cat: "Foundational & Leadership Skills" },
+      { name: "Lifting Ability", cat: "Baseline Applied Skills" },
+      { name: "Pallet Jacks", cat: "Core Role-Specific Skills" },
+      { name: "Loading And Unloading", cat: "Core Role-Specific Skills" },
+      { name: "Inventory Control", cat: "Core Role-Specific Skills" },
+      { name: "Stocking Merchandise", cat: "Core Role-Specific Skills" },
+      { name: "Sanitation", cat: "Baseline Applied Skills" },
+      { name: "Multitasking", cat: "Foundational & Leadership Skills" },
+      { name: "Organizational Skills", cat: "Foundational & Leadership Skills" },
+      { name: "Teamwork", cat: "Foundational & Leadership Skills" },
+      { name: "Order Picking", cat: "Core Role-Specific Skills" },
+      { name: "Order Fulfillment", cat: "Core Role-Specific Skills" },
+      { name: "Data Entry", cat: "Baseline Applied Skills" },
+      { name: "Mobile Devices", cat: "Baseline Applied Skills" },
+      { name: "Warehouse Operations", cat: "Core Role-Specific Skills" },
+    ],
+  },
+  "Laborers and Material Movers": {
+    icon: "🦺", workers: "~5.9M workers", cat: "ops",
+    clusters: [
+      { id: "lmm-moving", label: "Material Handling & Transport", description: "Physically moving freight, stock, and materials by hand or with equipment." },
+      { id: "lmm-loading", label: "Loading, Packing & Securing", description: "Sorting, packing, securing, and protecting cargo for storage or shipment." },
+      { id: "lmm-inspection", label: "Inspection & Quality Checks", description: "Inspecting products, verifying conditions, and identifying damage or leaks." },
+      { id: "lmm-records", label: "Documentation & Equipment Care", description: "Recording production data, maintaining equipment, tagging containers, and reading work orders." },
+    ],
+    skills: [
+      { name: "Warehousing", cat: "Core Role-Specific Skills" },
+      { name: "Loading And Unloading", cat: "Core Role-Specific Skills" },
+      { name: "Lifting Ability", cat: "Baseline Applied Skills" },
+      { name: "Palletizing", cat: "Core Role-Specific Skills" },
+      { name: "Communication", cat: "Foundational & Leadership Skills" },
+      { name: "Pallet Jacks", cat: "Core Role-Specific Skills" },
+      { name: "Packaging And Labeling", cat: "Core Role-Specific Skills" },
+      { name: "Sorting", cat: "Baseline Applied Skills" },
+      { name: "Material Handling", cat: "Core Role-Specific Skills" },
+      { name: "Inventory Management", cat: "Core Role-Specific Skills" },
+      { name: "Order Picking", cat: "Core Role-Specific Skills" },
+      { name: "Inventory Staging", cat: "Core Role-Specific Skills" },
+      { name: "Teamwork", cat: "Foundational & Leadership Skills" },
+      { name: "Order Fulfillment", cat: "Core Role-Specific Skills" },
+      { name: "Mobile Devices", cat: "Baseline Applied Skills" },
+    ],
+  },
+  "Industrial Machinery Mechanics": {
+    icon: "⚙️", workers: "~400K workers", cat: "ops",
+    clusters: [
+      { id: "imm-diagnosis", label: "Diagnostics & Troubleshooting", description: "Observing, testing, and analyzing machinery to diagnose malfunctions and equipment problems." },
+      { id: "imm-repair", label: "Repair & Fabrication", description: "Disassembling, repairing, replacing, welding, and reassembling machinery components." },
+      { id: "imm-maintenance", label: "Preventive Maintenance", description: "Cleaning, lubricating, adjusting, and verifying equipment operation after service." },
+      { id: "imm-technical", label: "Technical Reference & Programming", description: "Studying blueprints, reading manuals, and programming computer-controlled machinery." },
+      { id: "imm-admin", label: "Documentation & Coordination", description: "Recording repairs, ordering parts, assigning schedules, and demonstrating equipment." },
+    ],
+    skills: [
+      { name: "Troubleshooting (Problem Solving)", cat: "Foundational & Leadership Skills" },
+      { name: "Preventive Maintenance", cat: "Core Role-Specific Skills" },
+      { name: "Operations", cat: "Baseline Applied Skills" },
+      { name: "Blueprinting", cat: "Core Role-Specific Skills" },
+      { name: "Electrical Systems", cat: "Core Role-Specific Skills" },
+      { name: "Computer Literacy", cat: "Foundational & Leadership Skills" },
+      { name: "Production Equipment", cat: "Core Role-Specific Skills" },
+      { name: "Equipment Maintenance", cat: "Core Role-Specific Skills" },
+      { name: "Mechanical Systems", cat: "Core Role-Specific Skills" },
+      { name: "Machining", cat: "Core Role-Specific Skills" },
+      { name: "Lock Out / Tag Out", cat: "Baseline Applied Skills" },
+      { name: "Electrical Diagnostics And Repairs", cat: "Core Role-Specific Skills" },
+      { name: "Schematic Reading", cat: "Core Role-Specific Skills" },
+      { name: "Electrical/Electronic Troubleshooting", cat: "Core Role-Specific Skills" },
+    ],
+  },
+  "Inspectors Testers and Samplers": {
+    icon: "🔬", workers: "~460K workers", cat: "ops",
+    clusters: [
+      { id: "its-inspection", label: "Inspection & Measurement", description: "Inspecting, testing, and measuring materials and products for conformance to specifications." },
+      { id: "its-monitoring", label: "Process Monitoring & Adjustment", description: "Monitoring production operations and making adjustments to maintain quality." },
+      { id: "its-sampling", label: "Sampling, Sorting & Grading", description: "Collecting samples, sorting products, and grading items by specifications." },
+      { id: "its-reporting", label: "Data Recording & Reporting", description: "Recording test data, writing reports, computing defect rates, and notifying supervisors." },
+      { id: "its-equipment", label: "Equipment Maintenance & Compliance", description: "Maintaining and calibrating test equipment and ensuring regulatory compliance." },
+    ],
+    skills: [
+      { name: "Quality Control", cat: "Core Role-Specific Skills" },
+      { name: "Communication", cat: "Foundational & Leadership Skills" },
+      { name: "Quality Assurance", cat: "Core Role-Specific Skills" },
+      { name: "Auditing", cat: "Core Role-Specific Skills" },
+      { name: "Computer Literacy", cat: "Foundational & Leadership Skills" },
+      { name: "Microsoft Excel", cat: "Baseline Applied Skills" },
+      { name: "Quality Management Systems", cat: "Core Role-Specific Skills" },
+      { name: "Product Inspection", cat: "Core Role-Specific Skills" },
+      { name: "Manufacturing Processes", cat: "Core Role-Specific Skills" },
+      { name: "Product Testing", cat: "Core Role-Specific Skills" },
+      { name: "Corrective And Preventive Action (CAPA)", cat: "Core Role-Specific Skills" },
+      { name: "Calibration", cat: "Core Role-Specific Skills" },
+      { name: "Mechanical Inspection", cat: "Core Role-Specific Skills" },
+    ],
+  },
+  "Assemblers and Fabricators": {
+    icon: "🔩", workers: "~3.2M workers", cat: "ops",
+    clusters: [
+      { id: "asm-reading", label: "Blueprint Reading & Planning", description: "Interpreting technical documents and planning assembly work." },
+      { id: "asm-assembly", label: "Assembly & Installation", description: "Physically assembling components, wiring, and installing parts." },
+      { id: "asm-quality", label: "Quality Control & Testing", description: "Inspecting, testing, and adjusting assembled products for conformance." },
+      { id: "asm-docs", label: "Documentation & Tracking", description: "Maintaining production records, inventory tags, and waste reports." },
+      { id: "asm-support", label: "Support & Knowledge Transfer", description: "Cleaning, distributing materials, and training others." },
+    ],
+    skills: [
+      { name: "Lifting Ability", cat: "Baseline Applied Skills" },
+      { name: "Communication", cat: "Foundational & Leadership Skills" },
+      { name: "Operations", cat: "Baseline Applied Skills" },
+      { name: "Warehousing", cat: "Core Role-Specific Skills" },
+      { name: "Packaging And Labeling", cat: "Baseline Applied Skills" },
+      { name: "Construction", cat: "Baseline Applied Skills" },
+      { name: "Computer Literacy", cat: "Foundational & Leadership Skills" },
+      { name: "General Mathematics", cat: "Baseline Applied Skills" },
+      { name: "Inventory Control", cat: "Baseline Applied Skills" },
+      { name: "Inventory Management", cat: "Baseline Applied Skills" },
+      { name: "Ethical Standards And Conduct", cat: "Foundational & Leadership Skills" },
+      { name: "Data Entry", cat: "Baseline Applied Skills" },
+      { name: "Blueprinting", cat: "Core Role-Specific Skills" },
+      { name: "Production Line", cat: "Core Role-Specific Skills" },
+      { name: "Material Handling", cat: "Core Role-Specific Skills" },
+      { name: "Inventory Staging", cat: "Core Role-Specific Skills" },
+    ],
+  },
+  "Packers and Packagers": {
+    icon: "📦", workers: "~700K workers", cat: "ops",
+    clusters: [
+      { id: "pack-inspect", label: "Quality Inspection & Measurement", description: "Examining products and containers for quality and specification compliance." },
+      { id: "pack-packing", label: "Packing & Sealing", description: "Placing products into containers and sealing them for shipment." },
+      { id: "pack-label", label: "Labeling & Documentation", description: "Marking containers and recording order information." },
+      { id: "pack-material", label: "Material Handling & Transport", description: "Moving, sorting, and transporting products and materials." },
+    ],
+    skills: [
+      { name: "Warehousing", cat: "Core Role-Specific Skills" },
+      { name: "Packaging And Labeling", cat: "Core Role-Specific Skills" },
+      { name: "Palletizing", cat: "Core Role-Specific Skills" },
+      { name: "Lifting Ability", cat: "Baseline Applied Skills" },
+      { name: "Sorting", cat: "Baseline Applied Skills" },
+      { name: "Communication", cat: "Foundational & Leadership Skills" },
+      { name: "Order Picking", cat: "Core Role-Specific Skills" },
+      { name: "Order Fulfillment", cat: "Core Role-Specific Skills" },
+      { name: "Troubleshooting (Problem Solving)", cat: "Foundational & Leadership Skills" },
+      { name: "Inventory Management", cat: "Core Role-Specific Skills" },
+      { name: "Material Handling", cat: "Baseline Applied Skills" },
+      { name: "Order Processing", cat: "Core Role-Specific Skills" },
+    ],
+  },
+  "Maintenance and Repair Workers": {
+    icon: "🔧", workers: "~1.5M workers", cat: "ops",
+    clusters: [
+      { id: "maint-diag", label: "Diagnostics & Inspection", description: "Inspecting, testing, and diagnosing equipment malfunctions." },
+      { id: "maint-repair", label: "Repair & Fabrication", description: "Repairing machines, structures, and fabricating replacement parts." },
+      { id: "maint-prevent", label: "Preventive Maintenance", description: "Routine maintenance, cleaning, and lubrication of equipment." },
+      { id: "maint-facility", label: "Facility & Grounds", description: "Building maintenance, painting, roofing, groundskeeping, and cleaning." },
+      { id: "maint-planning", label: "Planning & Administration", description: "Estimating costs, ordering parts, recording work, and training staff." },
+    ],
+    skills: [
+      { name: "Communication", cat: "Foundational & Leadership Skills" },
+      { name: "Customer Service", cat: "Baseline Applied Skills" },
+      { name: "Troubleshooting (Problem Solving)", cat: "Foundational & Leadership Skills" },
+      { name: "HVAC", cat: "Core Role-Specific Skills" },
+      { name: "Painting", cat: "Core Role-Specific Skills" },
+      { name: "Lifting Ability", cat: "Baseline Applied Skills" },
+      { name: "Preventive Maintenance", cat: "Core Role-Specific Skills" },
+      { name: "Safety Standards", cat: "Baseline Applied Skills" },
+      { name: "Property Maintenance", cat: "Core Role-Specific Skills" },
+      { name: "Lock Out / Tag Out", cat: "Baseline Applied Skills" },
+      { name: "Corrective Maintenance", cat: "Core Role-Specific Skills" },
+    ],
+  },
+  "Transportation Supervisors": {
+    icon: "🚚", workers: "~100K workers", cat: "ops",
+    clusters: [
+      { id: "tsup-safety", label: "Safety & Compliance", description: "Monitoring safety procedures, inspecting equipment, and enforcing rules." },
+      { id: "tsup-supervise", label: "Staff Supervision & Development", description: "Directing workers, resolving problems, and managing performance." },
+      { id: "tsup-scheduling", label: "Scheduling & Logistics", description: "Planning work schedules, shipping times, and staffing requirements." },
+      { id: "tsup-hr", label: "Hiring & Training", description: "Recruiting, evaluating, and training employees." },
+      { id: "tsup-admin", label: "Records & Administration", description: "Maintaining records, reporting, budgeting, and inventory." },
+    ],
+    skills: [
+      { name: "Communication", cat: "Foundational & Leadership Skills" },
+      { name: "Warehousing", cat: "Core Role-Specific Skills" },
+      { name: "Customer Service", cat: "Baseline Applied Skills" },
+      { name: "Planning", cat: "Foundational & Leadership Skills" },
+      { name: "Scheduling", cat: "Core Role-Specific Skills" },
+      { name: "Microsoft Excel", cat: "Baseline Applied Skills" },
+      { name: "Inventory Management", cat: "Core Role-Specific Skills" },
+      { name: "Process Improvement", cat: "Core Role-Specific Skills" },
+      { name: "Operations Management", cat: "Core Role-Specific Skills" },
+      { name: "Performance Management", cat: "Foundational & Leadership Skills" },
+      { name: "Safety Standards", cat: "Core Role-Specific Skills" },
+      { name: "Bill Of Lading", cat: "Core Role-Specific Skills" },
+      { name: "Defensive Driving", cat: "Baseline Applied Skills" },
+      { name: "Data Analysis", cat: "Baseline Applied Skills" },
+    ],
+  },
+  "Shipping & Receiving Clerks": {
+    icon: "📬", workers: "~700K workers", cat: "ops",
+    clusters: [
+      { id: "ship-verify", label: "Verification & Inspection", description: "Examining shipments and comparing with records for accuracy." },
+      { id: "ship-docs", label: "Documentation & Record-Keeping", description: "Preparing shipping documents and recording shipment data." },
+      { id: "ship-logistics", label: "Shipping Logistics", description: "Determining shipping methods, contacting carriers, and routing." },
+      { id: "ship-physical", label: "Physical Handling & Packing", description: "Packing, labeling, and delivering materials within the facility." },
+      { id: "ship-inventory", label: "Inventory Management", description: "Requisitioning and storing shipping materials and supplies." },
+    ],
+    skills: [
+      { name: "Communication", cat: "Foundational & Leadership Skills" },
+      { name: "Customer Service", cat: "Baseline Applied Skills" },
+      { name: "Lifting Ability", cat: "Baseline Applied Skills" },
+      { name: "Packaging And Labeling", cat: "Core Role-Specific Skills" },
+      { name: "Computer Literacy", cat: "Foundational & Leadership Skills" },
+      { name: "General Mathematics", cat: "Baseline Applied Skills" },
+      { name: "Sorting", cat: "Baseline Applied Skills" },
+      { name: "Multitasking", cat: "Foundational & Leadership Skills" },
+      { name: "Invoicing", cat: "Core Role-Specific Skills" },
+      { name: "Inventory Management", cat: "Core Role-Specific Skills" },
+      { name: "Bill Of Lading", cat: "Core Role-Specific Skills" },
+      { name: "Cycle Counting", cat: "Core Role-Specific Skills" },
+      { name: "Data Entry", cat: "Baseline Applied Skills" },
+      { name: "Order Picking", cat: "Core Role-Specific Skills" },
+      { name: "Inventory Staging", cat: "Core Role-Specific Skills" },
+      { name: "Physical Inventory", cat: "Baseline Applied Skills" },
+      { name: "Order Fulfillment", cat: "Core Role-Specific Skills" },
+      { name: "Warehouse Operations", cat: "Core Role-Specific Skills" },
+      { name: "Material Handling", cat: "Core Role-Specific Skills" },
+      { name: "Freight Handling", cat: "Core Role-Specific Skills" },
+    ],
+  },
+  "Customer Service Representatives": {
+    icon: "🎧", workers: "~2.9M workers", cat: "retail",
+    clusters: [
+      { id: "csr-inquiry", label: "Customer Inquiry & Communication", description: "Interacting with customers to provide information and take orders." },
+      { id: "csr-resolve", label: "Complaint Resolution", description: "Investigating and resolving customer complaints and billing issues." },
+      { id: "csr-records", label: "Record-Keeping & Documentation", description: "Maintaining records of interactions, transactions, and contracts." },
+      { id: "csr-billing", label: "Billing & Payments", description: "Determining charges, collecting payments, and handling merchandise disputes." },
+      { id: "csr-improve", label: "Policy Review & Process Improvement", description: "Reviewing policies and recommending service improvements." },
+    ],
+    skills: [
+      { name: "Billing", cat: "Baseline Applied Skills" },
+      { name: "Call Center Experience", cat: "Core Role-Specific Skills" },
+      { name: "Cash Handling", cat: "Baseline Applied Skills" },
+      { name: "Clerical Works", cat: "Baseline Applied Skills" },
+      { name: "Communication", cat: "Foundational & Leadership Skills" },
+      { name: "Customer Inquiries", cat: "Core Role-Specific Skills" },
+      { name: "Customer Success Management", cat: "Core Role-Specific Skills" },
+      { name: "Customer Support", cat: "Core Role-Specific Skills" },
+      { name: "Data Entry", cat: "Baseline Applied Skills" },
+      { name: "Inbound Calls", cat: "Core Role-Specific Skills" },
+      { name: "Invoicing", cat: "Baseline Applied Skills" },
+      { name: "Order Entry", cat: "Baseline Applied Skills" },
+      { name: "Order Fulfillment", cat: "Core Role-Specific Skills" },
+      { name: "Prioritization", cat: "Foundational & Leadership Skills" },
+      { name: "Scheduling", cat: "Baseline Applied Skills" },
+    ],
+  },
+  "Customer Service Managers": {
+    icon: "👔", workers: "~400K workers", cat: "retail",
+    clusters: [
+      { id: "csm-strategy", label: "Sales Strategy & Direction", description: "Directing sales activities and setting organizational goals." },
+      { id: "csm-people", label: "Staff Management & Development", description: "Supervising, hiring, training, and evaluating sales staff." },
+      { id: "csm-customer", label: "Customer Relations", description: "Resolving customer complaints and advising on products." },
+      { id: "csm-finance", label: "Financial Planning & Analysis", description: "Budgeting, pricing, and analyzing operational performance." },
+      { id: "csm-ops", label: "Operations & Coordination", description: "Coordinating across departments, managing advertising and distribution." },
+    ],
+    skills: [
+      { name: "Call Center Experience", cat: "Core Role-Specific Skills" },
+      { name: "Cash Handling", cat: "Baseline Applied Skills" },
+      { name: "Coaching", cat: "Foundational & Leadership Skills" },
+      { name: "Communication", cat: "Foundational & Leadership Skills" },
+      { name: "Customer Service", cat: "Core Role-Specific Skills" },
+      { name: "Customer Support", cat: "Core Role-Specific Skills" },
+      { name: "Influencing Skills", cat: "Foundational & Leadership Skills" },
+      { name: "Invoicing", cat: "Baseline Applied Skills" },
+      { name: "Leadership", cat: "Foundational & Leadership Skills" },
+      { name: "Management", cat: "Foundational & Leadership Skills" },
+      { name: "Operations", cat: "Baseline Applied Skills" },
+      { name: "Performance Management", cat: "Foundational & Leadership Skills" },
+      { name: "Project Management", cat: "Baseline Applied Skills" },
+      { name: "Sales", cat: "Baseline Applied Skills" },
+    ],
+  },
+  "Retail Salespersons": {
+    icon: "🏷️", workers: "~4.5M workers", cat: "retail",
+    clusters: [
+      { id: "ret-customer", label: "Customer Engagement", description: "Greeting customers and understanding their needs." },
+      { id: "ret-transactions", label: "Sales Transactions", description: "Processing payments, returns, and preparing sales documents." },
+      { id: "ret-knowledge", label: "Product Knowledge & Promotions", description: "Staying current on sales, policies, and merchandise information." },
+      { id: "ret-merch", label: "Merchandising & Inventory", description: "Stocking, displaying, and tracking inventory." },
+      { id: "ret-specialty", label: "Specialty Services", description: "Estimating costs, trade-ins, repairs, and rentals." },
+    ],
+    skills: [
+      { name: "Bagging Merchandise", cat: "Core Role-Specific Skills" },
+      { name: "Cash Handling", cat: "Baseline Applied Skills" },
+      { name: "Cash Register", cat: "Baseline Applied Skills" },
+      { name: "Communication", cat: "Foundational & Leadership Skills" },
+      { name: "Customer Engagement", cat: "Baseline Applied Skills" },
+      { name: "Customer Service", cat: "Baseline Applied Skills" },
+      { name: "Greeting Customers", cat: "Core Role-Specific Skills" },
+      { name: "Leadership", cat: "Foundational & Leadership Skills" },
+      { name: "Loss Prevention", cat: "Core Role-Specific Skills" },
+      { name: "Problem Solving", cat: "Foundational & Leadership Skills" },
+      { name: "Retail Operations", cat: "Core Role-Specific Skills" },
+      { name: "Stocking Merchandise", cat: "Core Role-Specific Skills" },
+      { name: "Teamwork", cat: "Foundational & Leadership Skills" },
+    ],
+  },
+  "First-Line Supervisors of Retail Sales Workers": {
+    icon: "🗂️", workers: "~1.3M workers", cat: "retail",
+    clusters: [
+      { id: "rsup-customer", label: "Customer Service & Sales", description: "Assisting customers and ensuring satisfactory service quality." },
+      { id: "rsup-staff", label: "Staff Management", description: "Supervising, scheduling, hiring, and evaluating employees." },
+      { id: "rsup-merch", label: "Merchandising & Pricing", description: "Managing product displays, pricing, and advertising campaigns." },
+      { id: "rsup-inventory", label: "Inventory & Purchasing", description: "Tracking inventory, purchasing stock, and inspecting products." },
+      { id: "rsup-admin", label: "Administration & Finance", description: "Record-keeping, budgeting, reporting, and policy management." },
+    ],
+    skills: [
+      { name: "Accountability", cat: "Foundational & Leadership Skills" },
+      { name: "Cash Handling", cat: "Baseline Applied Skills" },
+      { name: "Cash Register", cat: "Baseline Applied Skills" },
+      { name: "Coaching", cat: "Foundational & Leadership Skills" },
+      { name: "Communication", cat: "Foundational & Leadership Skills" },
+      { name: "Customer Service", cat: "Baseline Applied Skills" },
+      { name: "Leadership", cat: "Foundational & Leadership Skills" },
+      { name: "Mentorship", cat: "Foundational & Leadership Skills" },
+      { name: "Merchandising", cat: "Core Role-Specific Skills" },
+      { name: "Organizational Skills", cat: "Foundational & Leadership Skills" },
+      { name: "Performance Management", cat: "Foundational & Leadership Skills" },
+      { name: "Problem Solving", cat: "Foundational & Leadership Skills" },
+      { name: "Retail Management", cat: "Core Role-Specific Skills" },
+      { name: "Scheduling", cat: "Baseline Applied Skills" },
+      { name: "Stocking Merchandise", cat: "Core Role-Specific Skills" },
+      { name: "Supervision", cat: "Foundational & Leadership Skills" },
+    ],
+  },
+  "Cashiers": {
+    icon: "💳", workers: "~3.3M workers", cat: "retail",
+    clusters: [
+      { id: "cash-trans", label: "Transaction Processing", description: "Receiving payments, making change, and processing returns." },
+      { id: "cash-customer", label: "Customer Interaction", description: "Greeting customers, answering questions, and providing assistance." },
+      { id: "cash-reconcile", label: "Cash Management & Reconciliation", description: "Counting drawers, balancing receipts, and maintaining financial records." },
+      { id: "cash-store", label: "Store Support", description: "Stocking shelves, cleaning, bagging, and assisting other departments." },
+    ],
+    skills: [
+      { name: "Customer Service", cat: "Baseline Applied Skills" },
+      { name: "Communication", cat: "Foundational & Leadership Skills" },
+      { name: "Cash Handling", cat: "Baseline Applied Skills" },
+      { name: "Point Of Sale", cat: "Core Role-Specific Skills" },
+      { name: "General Mathematics", cat: "Baseline Applied Skills" },
+      { name: "Bagging Merchandise", cat: "Baseline Applied Skills" },
+      { name: "Issuing Receipts", cat: "Core Role-Specific Skills" },
+      { name: "Customer Complaint Resolution", cat: "Foundational & Leadership Skills" },
+      { name: "Retail Sales", cat: "Core Role-Specific Skills" },
+      { name: "Retail Operations", cat: "Core Role-Specific Skills" },
+      { name: "Issuing Refunds", cat: "Core Role-Specific Skills" },
+      { name: "Price Checks", cat: "Core Role-Specific Skills" },
+    ],
+  },
+  "Receptionists and Information Clerks": {
+    icon: "🪟", workers: "~1M workers", cat: "retail",
+    clusters: [
+      { id: "rec-frontdesk", label: "Front Desk & Visitor Management", description: "Greeting visitors, answering phones, and directing people to appropriate contacts." },
+      { id: "rec-information", label: "Information & Referral Services", description: "Providing information to callers and visitors, and referring to appropriate departments." },
+      { id: "rec-admin", label: "Administrative Support", description: "Processing mail, filing, typing, and maintaining office supplies." },
+      { id: "rec-security", label: "Access Control & Security", description: "Issuing visitor passes, maintaining security logs, and monitoring building access." },
+    ],
+    skills: [
+      { name: "Customer Service", cat: "Core Role-Specific Skills" },
+      { name: "Communication", cat: "Foundational & Leadership Skills" },
+      { name: "Multitasking", cat: "Foundational & Leadership Skills" },
+      { name: "Telephone Skills", cat: "Baseline Applied Skills" },
+      { name: "Organizational Skills", cat: "Foundational & Leadership Skills" },
+      { name: "Scheduling", cat: "Core Role-Specific Skills" },
+      { name: "Data Entry", cat: "Baseline Applied Skills" },
+      { name: "Administrative Support", cat: "Core Role-Specific Skills" },
+      { name: "Microsoft Excel", cat: "Baseline Applied Skills" },
+      { name: "Front Office", cat: "Core Role-Specific Skills" },
+    ],
+  },
+  "Security Guards": {
+    icon: "🛡️", workers: "~1.1M workers", cat: "retail",
+    clusters: [
+      { id: "sec-monitoring", label: "Monitoring & Surveillance", description: "Patrolling, watching video monitors, and detecting suspicious activity." },
+      { id: "sec-access", label: "Access Control & Verification", description: "Checking credentials, issuing passes, and verifying identities." },
+      { id: "sec-response", label: "Incident Response & Assistance", description: "Responding to emergencies, directing traffic, and assisting persons in distress." },
+      { id: "sec-reporting", label: "Reporting & Documentation", description: "Writing incident reports, maintaining logs, and recording security activities." },
+    ],
+    skills: [
+      { name: "Customer Service", cat: "Baseline Applied Skills" },
+      { name: "Emergency Response", cat: "Core Role-Specific Skills" },
+      { name: "Problem Solving", cat: "Foundational & Leadership Skills" },
+      { name: "Communication", cat: "Foundational & Leadership Skills" },
+      { name: "Site Security", cat: "Core Role-Specific Skills" },
+      { name: "Patrolling", cat: "Core Role-Specific Skills" },
+      { name: "Access Controls", cat: "Core Role-Specific Skills" },
+      { name: "Incident Reporting", cat: "Core Role-Specific Skills" },
+      { name: "Physical Security", cat: "Core Role-Specific Skills" },
+      { name: "De-escalation Techniques", cat: "Baseline Applied Skills" },
+      { name: "First Aid", cat: "Baseline Applied Skills" },
+      { name: "Security Systems", cat: "Core Role-Specific Skills" },
+      { name: "Security Management", cat: "Core Role-Specific Skills" },
+      { name: "Crowd Control", cat: "Core Role-Specific Skills" },
+    ],
+  },
+  "Financial Analysts": {
+    icon: "📉", workers: "~330K workers", cat: "biz",
+    clusters: [
+      { id: "fin-research", label: "Financial Research & Data Analysis", description: "Gathering financial data, studying economic trends, and analyzing company performance." },
+      { id: "fin-modeling", label: "Modeling & Forecasting", description: "Building financial models, projecting earnings, and preparing valuation analyses." },
+      { id: "fin-reporting", label: "Reporting & Communication", description: "Preparing reports, presentations, and briefing clients or management." },
+      { id: "fin-compliance", label: "Regulatory & Compliance Activities", description: "Assessing investment risk, maintaining legal compliance, and financial record review." },
+    ],
+    skills: [
+      { name: "Accounting", cat: "Core Role-Specific Skills" },
+      { name: "Ad Hoc Analysis", cat: "Baseline Applied Skills" },
+      { name: "Analytical Skills", cat: "Baseline Applied Skills" },
+      { name: "Budgeting", cat: "Baseline Applied Skills" },
+      { name: "Communication", cat: "Foundational & Leadership Skills" },
+      { name: "Financial Data", cat: "Core Role-Specific Skills" },
+      { name: "Financial Management", cat: "Core Role-Specific Skills" },
+      { name: "Financial Planning", cat: "Core Role-Specific Skills" },
+      { name: "Financial Statements", cat: "Core Role-Specific Skills" },
+      { name: "Forecasting", cat: "Core Role-Specific Skills" },
+      { name: "Leadership", cat: "Foundational & Leadership Skills" },
+      { name: "Microsoft Excel", cat: "Baseline Applied Skills" },
+      { name: "Month-End Closing", cat: "Core Role-Specific Skills" },
+      { name: "Power BI", cat: "Baseline Applied Skills" },
+      { name: "Presentations", cat: "Baseline Applied Skills" },
+      { name: "Research", cat: "Baseline Applied Skills" },
+      { name: "Variance Analysis", cat: "Core Role-Specific Skills" },
+    ],
+  },
+  "Financial Managers": {
+    icon: "🏦", workers: "~700K workers", cat: "biz",
+    clusters: [
+      { id: "finmgr-planning", label: "Financial Planning & Budgeting", description: "Developing financial plans, budgets, and long-range forecasts." },
+      { id: "finmgr-reporting", label: "Financial Reporting & Compliance", description: "Preparing financial reports, ensuring regulatory compliance, and overseeing audits." },
+      { id: "finmgr-leadership", label: "Leadership & Coordination", description: "Directing staff, coordinating with executives, and advising management." },
+      { id: "finmgr-investment", label: "Investment & Capital Management", description: "Managing investments, credit activities, and capital expenditure decisions." },
+    ],
+    skills: [
+      { name: "Accounting", cat: "Core Role-Specific Skills" },
+      { name: "Communication", cat: "Foundational & Leadership Skills" },
+      { name: "Operations", cat: "Baseline Applied Skills" },
+      { name: "Financial Statements", cat: "Core Role-Specific Skills" },
+      { name: "Budgeting", cat: "Core Role-Specific Skills" },
+      { name: "Problem Solving", cat: "Foundational & Leadership Skills" },
+      { name: "Microsoft Excel", cat: "Baseline Applied Skills" },
+      { name: "Financial Analysis", cat: "Core Role-Specific Skills" },
+      { name: "Decision Making", cat: "Foundational & Leadership Skills" },
+      { name: "Process Improvement", cat: "Baseline Applied Skills" },
+      { name: "General Ledger", cat: "Core Role-Specific Skills" },
+      { name: "Accounts Receivable", cat: "Core Role-Specific Skills" },
+      { name: "Accounts Payable", cat: "Core Role-Specific Skills" },
+      { name: "Supervision", cat: "Foundational & Leadership Skills" },
+      { name: "Month-End Closing", cat: "Core Role-Specific Skills" },
+      { name: "Account Reconciliation", cat: "Core Role-Specific Skills" },
+    ],
+  },
+  "Project Management Specialists": {
+    icon: "🗂️", workers: "~900K workers", cat: "biz",
+    clusters: [
+      { id: "pm2-planning", label: "Project Planning & Scheduling", description: "Defining scope, developing plans, scheduling activities, and creating timelines." },
+      { id: "pm2-resources", label: "Resource & Budget Management", description: "Managing project budgets, allocating resources, and tracking costs." },
+      { id: "pm2-risk", label: "Risk & Issue Management", description: "Identifying and mitigating project risks and resolving issues." },
+      { id: "pm2-communication", label: "Team Coordination & Communication", description: "Coordinating project teams, facilitating communication, and managing stakeholders." },
+    ],
+    skills: [
+      { name: "Communication", cat: "Foundational & Leadership Skills" },
+      { name: "Operations", cat: "Baseline Applied Skills" },
+      { name: "Problem Solving", cat: "Foundational & Leadership Skills" },
+      { name: "Microsoft Excel", cat: "Baseline Applied Skills" },
+      { name: "Scheduling", cat: "Baseline Applied Skills" },
+      { name: "Project Schedules", cat: "Core Role-Specific Skills" },
+      { name: "Project Planning", cat: "Core Role-Specific Skills" },
+      { name: "Budgeting", cat: "Core Role-Specific Skills" },
+      { name: "Timelines", cat: "Core Role-Specific Skills" },
+      { name: "Project Scoping", cat: "Core Role-Specific Skills" },
+      { name: "Project Implementation", cat: "Core Role-Specific Skills" },
+      { name: "Change Management", cat: "Core Role-Specific Skills" },
+      { name: "Risk Management", cat: "Foundational & Leadership Skills" },
+      { name: "Project Documentation", cat: "Core Role-Specific Skills" },
+      { name: "Governance", cat: "Foundational & Leadership Skills" },
+      { name: "Project Performance", cat: "Core Role-Specific Skills" },
+      { name: "Project Closure", cat: "Core Role-Specific Skills" },
+      { name: "Project Controls", cat: "Core Role-Specific Skills" },
+      { name: "Data Analysis", cat: "Baseline Applied Skills" },
+      { name: "Stakeholder Management", cat: "Foundational & Leadership Skills" },
+    ],
+  },
+  "Purchasing Agents": {
+    icon: "🛒", workers: "~310K workers", cat: "biz",
+    clusters: [
+      { id: "purch-sourcing", label: "Procurement & Sourcing", description: "Identifying suppliers, requesting bids, and purchasing goods and services." },
+      { id: "purch-vendor", label: "Vendor Management & Negotiation", description: "Negotiating contracts, managing vendor relationships, and resolving supply issues." },
+      { id: "purch-analysis", label: "Market Research & Cost Analysis", description: "Analyzing price trends, monitoring market conditions, and evaluating trade agreements." },
+      { id: "purch-records", label: "Records, Compliance & Reporting", description: "Maintaining procurement records, preparing reports, and ensuring regulatory compliance." },
+    ],
+    skills: [
+      { name: "Procurement", cat: "Core Role-Specific Skills" },
+      { name: "Communication", cat: "Foundational & Leadership Skills" },
+      { name: "Microsoft Excel", cat: "Baseline Applied Skills" },
+      { name: "Customer Service", cat: "Baseline Applied Skills" },
+      { name: "Contract Management", cat: "Core Role-Specific Skills" },
+      { name: "Supply Chain", cat: "Core Role-Specific Skills" },
+      { name: "Inventory Management", cat: "Baseline Applied Skills" },
+      { name: "Supplier Performance Management", cat: "Core Role-Specific Skills" },
+      { name: "Supply Chain Management", cat: "Core Role-Specific Skills" },
+      { name: "Price Negotiation", cat: "Core Role-Specific Skills" },
+      { name: "Request For Quotation (RFQ)", cat: "Core Role-Specific Skills" },
+      { name: "Strategic Sourcing", cat: "Core Role-Specific Skills" },
+      { name: "Supplier Relationship Management", cat: "Core Role-Specific Skills" },
+      { name: "Contract Review", cat: "Core Role-Specific Skills" },
+      { name: "Supplier Identification And Selection", cat: "Core Role-Specific Skills" },
+    ],
+  },
+  "Sales Managers": {
+    icon: "🎯", workers: "~400K workers", cat: "biz",
+    clusters: [
+      { id: "smgr-strategy", label: "Sales Strategy & Planning", description: "Setting sales goals, developing strategies, and overseeing regional operations." },
+      { id: "smgr-team", label: "Team Management", description: "Directing, training, and evaluating sales staff." },
+      { id: "smgr-performance", label: "Performance Analysis & Reporting", description: "Reviewing sales records, analyzing data, and reporting to executives." },
+      { id: "smgr-customer", label: "Customer & Partner Relations", description: "Resolving customer issues, visiting clients, and managing distribution partnerships." },
+    ],
+    skills: [
+      { name: "Account Management", cat: "Core Role-Specific Skills" },
+      { name: "Budgeting", cat: "Baseline Applied Skills" },
+      { name: "Coaching", cat: "Foundational & Leadership Skills" },
+      { name: "Communication", cat: "Foundational & Leadership Skills" },
+      { name: "Customer Relationship Management", cat: "Baseline Applied Skills" },
+      { name: "Customer Service", cat: "Baseline Applied Skills" },
+      { name: "Finance", cat: "Baseline Applied Skills" },
+      { name: "Forecasting", cat: "Core Role-Specific Skills" },
+      { name: "Influencing Skills", cat: "Foundational & Leadership Skills" },
+      { name: "Leadership", cat: "Foundational & Leadership Skills" },
+      { name: "Marketing", cat: "Baseline Applied Skills" },
+      { name: "Negotiation", cat: "Baseline Applied Skills" },
+      { name: "Planning", cat: "Foundational & Leadership Skills" },
+      { name: "Presentations", cat: "Baseline Applied Skills" },
+      { name: "Sales Prospecting", cat: "Core Role-Specific Skills" },
+      { name: "Selling Techniques", cat: "Core Role-Specific Skills" },
+      { name: "Strategic Planning", cat: "Core Role-Specific Skills" },
+    ],
+  },
+  "Sales Representatives": {
+    icon: "📞", workers: "~1.5M workers", cat: "biz",
+    clusters: [
+      { id: "srep-prospecting", label: "Prospecting & Lead Generation", description: "Contacting prospective customers and generating new business opportunities." },
+      { id: "srep-presentations", label: "Customer Presentations & Proposals", description: "Demonstrating products, creating quotes, and preparing sales proposals." },
+      { id: "srep-relationship", label: "Relationship Management", description: "Maintaining client relationships, resolving issues, and ensuring satisfaction." },
+      { id: "srep-admin", label: "Order Processing & Reporting", description: "Processing orders, tracking inventory, and preparing sales reports." },
+    ],
+    skills: [
+      { name: "Customer Service", cat: "Baseline Applied Skills" },
+      { name: "Communication", cat: "Foundational & Leadership Skills" },
+      { name: "Selling Techniques", cat: "Core Role-Specific Skills" },
+      { name: "Sales Prospecting", cat: "Core Role-Specific Skills" },
+      { name: "Marketing", cat: "Baseline Applied Skills" },
+      { name: "Outside Sales", cat: "Core Role-Specific Skills" },
+      { name: "Customer Relationship Management", cat: "Baseline Applied Skills" },
+      { name: "Problem Solving", cat: "Foundational & Leadership Skills" },
+      { name: "Business Development", cat: "Core Role-Specific Skills" },
+      { name: "Cold Calling", cat: "Core Role-Specific Skills" },
+      { name: "Product Knowledge", cat: "Core Role-Specific Skills" },
+      { name: "Business To Business", cat: "Core Role-Specific Skills" },
+      { name: "Account Management", cat: "Core Role-Specific Skills" },
+      { name: "Sales Territory Management", cat: "Core Role-Specific Skills" },
+      { name: "Relationship Building", cat: "Foundational & Leadership Skills" },
+      { name: "Lead Generation", cat: "Core Role-Specific Skills" },
+      { name: "Cross-Selling", cat: "Core Role-Specific Skills" },
+    ],
+  },
+  "Production and Expediting Clerks": {
+    icon: "📋", workers: "~320K workers", cat: "biz",
+    clusters: [
+      { id: "prod-scheduling", label: "Production Scheduling & Planning", description: "Coordinating production schedules, workloads, and material flows." },
+      { id: "prod-expediting", label: "Order Tracking & Expediting", description: "Tracking orders, monitoring progress, and following up on delays." },
+      { id: "prod-inventory", label: "Inventory & Materials Coordination", description: "Managing materials, tracking stock levels, and coordinating with suppliers." },
+      { id: "prod-reporting", label: "Documentation & Reporting", description: "Preparing status reports, recording data, and maintaining production records." },
+    ],
+    skills: [
+      { name: "Communication", cat: "Foundational & Leadership Skills" },
+      { name: "Scheduling", cat: "Core Role-Specific Skills" },
+      { name: "Operations", cat: "Baseline Applied Skills" },
+      { name: "Customer Service", cat: "Baseline Applied Skills" },
+      { name: "Microsoft Excel", cat: "Baseline Applied Skills" },
+      { name: "Problem Solving", cat: "Foundational & Leadership Skills" },
+      { name: "Warehousing", cat: "Core Role-Specific Skills" },
+      { name: "Multitasking", cat: "Foundational & Leadership Skills" },
+      { name: "Organizational Skills", cat: "Foundational & Leadership Skills" },
+      { name: "Logistics", cat: "Core Role-Specific Skills" },
+      { name: "Data Entry", cat: "Baseline Applied Skills" },
+      { name: "Inventory Control", cat: "Core Role-Specific Skills" },
+      { name: "Cycle Counting", cat: "Core Role-Specific Skills" },
+      { name: "Order Fulfillment", cat: "Core Role-Specific Skills" },
+    ],
+  },
+};
+</script>
+<script>
+// ─── STATE ────────────────────────────────────────────────────
+let APP = {
+  phase: 'role',
+  role: null, roleData: null,
+  clusterIdx: 0,
+  answers: {},      // clusterId → { q1:score, ... }
+  results: {},      // clusterId → 'hl'|'hitl'|'hotl'|'auto'
+  constraints: {},  // clusterId → { qId, label }
+  placements: {},   // skillName → clusterId | 'pool'
+  drops: {},        // skillName → true
+  newSkills: [],    // [{name, clusterId, id}]
+};
+
+let dragDropInitialized = false;
+let draggingId = null;
+
+// ─── CONFIG ───────────────────────────────────────────────────
+const LEVEL = { hl:4, hitl:3, hotl:2, auto:1, none:0 };
+
+const BUCKETS = {
+  hl:   { label:'Human-Led',           color:'#7B2020' },
+  hitl: { label:'Human-in-the-Loop',   color:'#B85520' },
+  hotl: { label:'Human-on-the-Loop',   color:'#9B7200' },
+  auto: { label:'Full Auto',           color:'#4a4a4a' },
+};
+
+const CELL_COLORS = {
+  hl:   { bg:'#7B2020', text:'#fff' },
+  hitl: { bg:'#B85520', text:'#fff' },
+  hotl: { bg:'#9B7200', text:'#fff' },
+  none: { bg:'#D4D3CC', text:'#555' },
+};
+
+const BADGE_LABELS = {
+  hl:   '→ Human-Led',
+  hitl: '→ HITL minimum',
+  hotl: '→ HOTL minimum',
+  none: 'No minimum set',
+};
+
+const FATE_LABELS = {
+  hl:   'Deepens',
+  hitl: 'Persists',
+  hotl: 'Potential Drop',
+  auto: 'Potential Drop',
+};
+
+const GAP_TIPS = {
+  hl:   'What human skill does this cluster demand that is missing from the list?',
+  hitl: 'What judgment or verification skill is missing from this cluster?',
+  hotl: 'What monitoring or exception-handling skill should be tracked?',
+  auto: 'What oversight or spot-check capability should be preserved?',
+};
+
+const CAT_CLASS = {
+  'Foundational & Leadership Skills': 'cat-foundational',
+  'Core Role-Specific Skills': 'cat-core',
+  'Baseline Applied Skills': 'cat-baseline',
+};
+
+const ROUTING_QUESTIONS = [
+  { id:'q1', label:'Physical Presence', group:1,
+    groupLabel:'Group 1 — Hard Exits',
+    groupDesc:'Any answer here can force Human-Led.',
+    text:'Does completing this cluster require physical presence or hands-on action?',
+    options:[
+      { score:1, label:'Always essential',    sub:'Physical presence IS the work — cannot be separated from it.', min:'hl' },
+      { score:2, label:'Usually required',    sub:'The norm; remote exceptions are rare and incomplete.', min:'hl' },
+      { score:3, label:'Occasionally needed', sub:'Most work is remote-capable; physical presence sometimes helps.', min:'hitl' },
+      { score:4, label:'Not required',        sub:'Fully performable remotely with no meaningful loss.', min:'none' },
+    ]},
+  { id:'q2', label:'Regulatory Context', group:1,
+    groupLabel:'Group 1 — Hard Exits',
+    groupDesc:'Any answer here can force Human-Led.',
+    text:'What compliance or legal context governs this cluster?',
+    options:[
+      { score:1, label:'Licensed sign-off required', sub:'Law or regulation requires a named human to be accountable.', min:'hl' },
+      { score:2, label:'Audit trail required',        sub:'Human review must be documented; accountability is external.', min:'hitl' },
+      { score:3, label:'Standards-guided',            sub:'Best practices apply but no external mandate requires human sign-off.', min:'none' },
+      { score:4, label:'No compliance context',       sub:'Fully discretionary — no regulatory constraints.', min:'none' },
+    ]},
+  { id:'q3', label:'Codifiability', group:1,
+    groupLabel:'Group 1 — Hard Exits',
+    groupDesc:'Any answer here can force Human-Led.',
+    text:'Can the rules and logic for this cluster be written down completely?',
+    options:[
+      { score:1, label:'Not at all',       sub:'Highly contextual and judgment-driven — rules cannot capture it.', min:'hl' },
+      { score:2, label:'Somewhat',         sub:'Guidelines exist but significant discretion remains in practice.', min:'hitl' },
+      { score:3, label:'Mostly',           sub:'Structured process with clear procedure; few real edge cases.', min:'none' },
+      { score:4, label:'Fully rule-based', sub:'Explicit procedures cover it completely; exceptions are defined.', min:'none' },
+    ]},
+  { id:'q4', label:'Relational Value', group:2,
+    groupLabel:'Group 2 — Oversight Floors',
+    groupDesc:'Answers here set a minimum level of human involvement.',
+    text:'Does this cluster require human relational presence to deliver its value?',
+    options:[
+      { score:1, label:'Relationship IS the value',   sub:'Trust, rapport, or emotional presence is the core output.', min:'hitl' },
+      { score:2, label:'Human presence essential',    sub:'Significantly enhances outcome — stakeholders expect it.', min:'hitl' },
+      { score:3, label:'Human preferred',             sub:'Stakeholders tolerate AI delivery but prefer a human touch.', min:'hotl' },
+      { score:4, label:'Not a factor',                sub:'Relationship context is irrelevant to task delivery.', min:'none' },
+    ]},
+  { id:'q5', label:'Error Stakes', group:2,
+    groupLabel:'Group 2 — Oversight Floors',
+    groupDesc:'Answers here set a minimum level of human involvement.',
+    text:'What is the cost of an undetected error from this cluster?',
+    options:[
+      { score:1, label:'Catastrophic',  sub:'Legal liability, safety risk, or severe irreversible harm.', min:'hitl' },
+      { score:2, label:'High impact',   sub:'Significant operational or reputational damage — hard to recover.', min:'hitl' },
+      { score:3, label:'Recoverable',   sub:'Fixable with meaningful effort; some downstream impact.', min:'hotl' },
+      { score:4, label:'Low',           sub:'Easily caught and corrected with minimal consequence.', min:'none' },
+    ]},
+  { id:'q6', label:'Output Verifiability', group:2,
+    groupLabel:'Group 2 — Oversight Floors',
+    groupDesc:'Answers here set a minimum level of human involvement.',
+    text:'Can AI output from this cluster be checked without re-doing the work?',
+    options:[
+      { score:1, label:'Not possible',      sub:'Requires re-doing the task to know if the output is correct.', min:'hitl' },
+      { score:2, label:'Difficult',          sub:'Significant expert effort required to verify output quality.', min:'hitl' },
+      { score:3, label:'Mostly verifiable',  sub:'A quick review catches most errors without re-doing the work.', min:'hotl' },
+      { score:4, label:'Easily verified',    sub:'Objective check or auto-validation confirms accuracy.', min:'none' },
+    ]},
+  { id:'q7', label:'Required Expertise', group:3,
+    groupLabel:'Group 3 — Strategic Modifiers',
+    groupDesc:'Prevents Full Auto when the task demands rare human capability.',
+    text:'How specialized is the human knowledge required for this cluster?',
+    options:[
+      { score:1, label:'Rare specialist',       sub:'Years to develop; hard to hire and harder to replace.', min:'hitl' },
+      { score:2, label:'Professional training', sub:'Standard professional credentials or equivalent experience required.', min:'hitl' },
+      { score:3, label:'Trained generalist',    sub:'Any capable employee with role-specific training can do it.', min:'hotl' },
+      { score:4, label:'Basic / entry-level',   sub:'Minimal training required; quickly learned on the job.', min:'none' },
+    ]},
+  { id:'q8', label:'Learning Value', group:3,
+    groupLabel:'Group 3 — Strategic Modifier',
+    groupDesc:'Prevents Full Auto when the task builds critical human capability.',
+    text:'Does doing this cluster build critical human capability over time?',
+    options:[
+      { score:1, label:'Core to career path',  sub:'Essential for skill development; removing it hollows out the role.', min:'hotl' },
+      { score:2, label:'Valuable learning',    sub:'Good developmental opportunity worth preserving.', min:'hotl' },
+      { score:3, label:'Marginal benefit',     sub:'Some learning value, but not critical to career growth.', min:'none' },
+      { score:4, label:'No development value', sub:'Routine work; no meaningful growth from doing it.', min:'none' },
+    ]},
+];
+
+// ─── COMPUTE RESULT ───────────────────────────────────────────
+function computeResult(answers) {
+  let topLevel = 0, topBucket = 'auto', sourceQId = null, sourceLabel = null;
+  for (const q of ROUTING_QUESTIONS) {
+    const score = answers?.[q.id];
+    if (!score) continue;
+    const opt = q.options.find(o => o.score === score);
+    if (!opt || opt.min === 'none') continue;
+    const lv = LEVEL[opt.min] || 0;
+    if (lv > topLevel) {
+      topLevel = lv; topBucket = opt.min;
+      sourceQId = q.id; sourceLabel = q.label;
+    }
+  }
+  return { bucket: topBucket, sourceQId, sourceLabel };
+}
+
+function currentFloorLevel(answers) {
+  const { bucket, sourceQId } = computeResult(answers);
+  // Only apply a floor when an actual answer triggered a minimum.
+  // 'auto' is the no-answers default — no real floor is set yet.
+  if (!sourceQId) return 0;
+  return LEVEL[bucket] || 0;
+}
+
+// ─── PHASE CONTROL ────────────────────────────────────────────
+function showPhase(p) {
+  APP.phase = p;
+  document.getElementById('phase-role').style.display = p==='role' ? 'block' : 'none';
+  document.getElementById('phase-routing').style.display = p==='routing' ? 'block' : 'none';
+  document.getElementById('phase-skills').style.display = p==='skills' ? 'block' : 'none';
+  document.getElementById('pip1').className = 'phase-pip' + (p==='role' ? ' active' : ' done');
+  document.getElementById('pip2').className = 'phase-pip' + (p==='routing' ? ' active' : p==='skills' ? ' done' : '');
+  document.getElementById('pip3').className = 'phase-pip' + (p==='skills' ? ' active' : '');
+  document.getElementById('btn-reset').style.display = p==='role' ? 'none' : '';
+  if (p==='routing') renderRoutingPhase();
+  if (p==='skills') renderSkillSortPhase();
+}
+
+function resetAll() {
+  APP = { phase:'role', role:null, roleData:null, clusterIdx:0,
+          answers:{}, results:{}, constraints:{}, placements:{}, drops:{}, newSkills:[] };
+  dragDropInitialized = false;
+  showPhase('role');
+}
+
+// ─── PHASE 1: ROLE SELECTION ──────────────────────────────────
+function renderRolePhase() {
+  const el = document.getElementById('phase-role');
+  let html = `<div class="role-phase-header"><h2>Select a Role</h2><p>Choose the occupation you want to route through the AI decision framework.</p></div>`;
+  for (const [catKey, cat] of Object.entries(ROLE_CATEGORIES)) {
+    html += `<div class="cat-section"><div class="cat-label">${cat.label}</div><div class="role-grid">`;
+    for (const roleName of cat.roles) {
+      const rd = WORKSHOP_ROLES[roleName];
+      if (!rd) continue;
+      html += `<div class="role-card" data-role="${esc(roleName)}" onclick="selectRole(this,'${esc(roleName)}')">
+        <div class="r-name">${esc(roleName)}</div>
+        <div class="r-workers">${rd.workers}</div>
+      </div>`;
+    }
+    html += `</div></div>`;
+  }
+  el.innerHTML = html;
+}
+
+function selectRole(card, roleName) {
+  document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+  APP.role = roleName;
+  APP.roleData = WORKSHOP_ROLES[roleName];
+  APP.clusterIdx = 0;
+  APP.answers = {};
+  APP.results = {};
+  APP.constraints = {};
+  APP.placements = {};
+  APP.drops = {};
+  APP.newSkills = [];
+  setTimeout(() => showPhase('routing'), 180);
+}
+
+// ─── PHASE 2: ROUTING ─────────────────────────────────────────
+function renderRoutingPhase() {
+  const clusters = APP.roleData.clusters;
+  const idx = APP.clusterIdx;
+  const cluster = clusters[idx];
+  const answers = APP.answers[cluster.id] || {};
+  const floorLv = currentFloorLevel(answers);
+  const { bucket, sourceLabel } = computeResult(answers);
+  const allAnswered = ROUTING_QUESTIONS.every(q => answers[q.id]);
+
+  // Progress pips
+  let pips = '';
+  for (let i = 0; i < clusters.length; i++) {
+    const cls = i < idx ? 'done' : i === idx ? 'active' : '';
+    pips += `<div class="cp-pip ${cls}">${i+1}</div>`;
+  }
+
+  // Build question rows, grouped
+  let qHtml = '';
+  let lastGroup = null;
+  for (const q of ROUTING_QUESTIONS) {
+    if (q.group !== lastGroup) {
+      const gClass = ['','g1','g2','g3'][q.group];
+      qHtml += `<div class="group-divider ${gClass}">
+        <span>${q.groupLabel}</span>
+        <span class="g-desc">${q.groupDesc}</span>
+      </div>`;
+      lastGroup = q.group;
+    }
+    const selectedScore = answers[q.id];
+
+    // q-label floor class
+    let qLabelClass = 'q-label';
+    if (floorLv >= LEVEL.hl) qLabelClass += ' floor-hl';
+    else if (floorLv >= LEVEL.hitl) qLabelClass += ' floor-hitl';
+    else if (floorLv >= LEVEL.hotl) qLabelClass += ' floor-hotl';
+
+    // build cells
+    let cellsHtml = '';
+    // Pre-compute the "ceiling" index: last option whose min level >= the current floor
+    // (used to draw the inset right-edge boundary marker)
+    let ceilIdx = -1;
+    q.options.forEach((o, i) => { if ((LEVEL[o.min] || 0) >= floorLv) ceilIdx = i; });
+
+    for (let oi = 0; oi < q.options.length; oi++) {
+      const opt = q.options[oi];
+      const cc = CELL_COLORS[opt.min] || CELL_COLORS.none;
+      const isSelected = selectedScore === opt.score;
+      const optLevel = LEVEL[opt.min] || 0;
+      const minClass = opt.min === 'none' ? 'none-min' : opt.min;
+      let cellClass = `a-cell ${minClass}`;
+      if (isSelected) cellClass += ' selected';
+      // Floor visual: dim cells that can't affect result (below current floor), but keep clickable
+      if (floorLv > 0 && optLevel < floorLv) cellClass += ' floor-locked';
+      // Boundary marker: inset right border on the last "active" cell in this row
+      if (floorLv > 0 && oi === ceilIdx && ceilIdx < q.options.length - 1) cellClass += ' floor-ceil-' + bucket;
+      cellsHtml += `<div class="${cellClass}"
+        style="background:${cc.bg};color:${cc.text}"
+        data-qid="${q.id}" data-score="${opt.score}" data-cid="${cluster.id}"
+        onclick="selectAnswer('${cluster.id}','${q.id}',${opt.score})">
+        <div class="a-label">${esc(opt.label)}</div>
+        <div class="a-sub">${esc(opt.sub)}</div>
+        <div class="a-badge">${esc(BADGE_LABELS[opt.min])}</div>
+      </div>`;
+    }
+
+    qHtml += `<div class="q-row">
+      <div class="${qLabelClass}">
+        <div class="q-num">Q${ROUTING_QUESTIONS.indexOf(q)+1}</div>
+        <div class="q-name">${esc(q.label)}</div>
+        <div class="q-text">${esc(q.text)}</div>
+      </div>
+      <div class="answers-row">${cellsHtml}</div>
+    </div>`;
+  }
+
+  // Result bar — show live result from whatever's answered so far
+  const anyAnswered = Object.keys(answers).length > 0;
+  let resultHtml;
+  if (!anyAnswered) {
+    resultHtml = `<span class="result-label-sm">Routing result:</span><span class="result-badge" style="background:#888">Full Auto</span><span class="result-constraint">Answer questions to see routing.</span>`;
+  } else {
+    resultHtml = `<span class="result-label-sm">Routing result:</span><span class="result-badge" style="background:${BUCKETS[bucket].color}">${BUCKETS[bucket].label}</span>`;
+    if (sourceLabel) {
+      resultHtml += `<span class="result-constraint">Binding constraint: <strong>${esc(sourceLabel)}</strong></span>`;
+    } else {
+      resultHtml += `<span class="result-constraint">No overriding minimum — defaulting to Full Auto.</span>`;
+    }
+  }
+
+  const isLast = idx === clusters.length - 1;
+  const prevDisabled = idx === 0;
+  const nextLabel = isLast ? 'Proceed to Skill Sort →' : 'Next Cluster →';
+
+  document.getElementById('phase-routing').innerHTML = `
+    <div class="cluster-progress">
+      <div class="cp-label">Cluster ${idx+1} of ${clusters.length}</div>
+      <div class="cp-pips">${pips}</div>
+    </div>
+    <div class="cluster-card">
+      <h2>${esc(cluster.label)}</h2>
+      <p>${esc(cluster.description)}</p>
+    </div>
+    <div class="questions-wrap">
+      <div class="dir-bar">
+        <div class="dir-spacer"></div>
+        <div class="dir-text">← More human oversight &nbsp;·&nbsp; More AI autonomy →</div>
+      </div>
+      ${qHtml}
+    </div>
+    <div class="result-bar">${resultHtml}</div>
+    <div class="routing-nav">
+      <button class="btn btn-sec" onclick="prevCluster()" ${prevDisabled?'disabled':''}>← Previous</button>
+      <button class="btn btn-pri" onclick="nextCluster()" id="btn-next">${nextLabel}</button>
+    </div>
+  `;
+
+}
+
+function selectAnswer(clusterId, qId, score) {
+  if (!APP.answers[clusterId]) APP.answers[clusterId] = {};
+  APP.answers[clusterId][qId] = score;
+  renderRoutingPhase();
+}
+
+function nextCluster() {
+  const clusters = APP.roleData.clusters;
+  const idx = APP.clusterIdx;
+  const cluster = clusters[idx];
+  const answers = APP.answers[cluster.id] || {};
+  // Save result
+  const { bucket, sourceQId, sourceLabel } = computeResult(answers);
+  APP.results[cluster.id] = bucket;
+  if (sourceQId) APP.constraints[cluster.id] = { qId: sourceQId, label: sourceLabel };
+  if (idx === clusters.length - 1) {
+    // Initialize placements
+    APP.roleData.skills.forEach(s => { APP.placements[s.name] = 'pool'; });
+    showPhase('skills');
+  } else {
+    APP.clusterIdx++;
+    renderRoutingPhase();
+  }
+}
+
+function prevCluster() {
+  if (APP.clusterIdx > 0) { APP.clusterIdx--; renderRoutingPhase(); }
+}
+
+// ─── PHASE 3: SKILL SORT ──────────────────────────────────────
+function skillId(name) {
+  return 'skill-' + name.replace(/[^a-zA-Z0-9]/g, '_');
+}
+
+function pillCatClass(cat) {
+  return CAT_CLASS[cat] || 'cat-baseline';
+}
+
+function makePill(name, cat, opts) {
+  const sid = skillId(name);
+  const catCls = opts?.gap ? 'cat-gap' : pillCatClass(cat);
+  const isDropped = APP.drops[name];
+  const bucket = opts?.bucket;
+  const needsConfirm = bucket === 'hotl' || bucket === 'auto';
+  const checked = isDropped ? 'checked' : '';
+  const droppedCls = isDropped ? ' dropped' : '';
+  let confirmHtml = '';
+  if (needsConfirm) {
+    confirmHtml = `<span class="pill-drop-confirm">
+      <input type="checkbox" id="dc_${sid}" ${checked} onchange="toggleDrop('${esc(name)}',this.checked)" title="Confirm this skill can be dropped">
+      <label for="dc_${sid}">Drop</label>
+    </span>`;
+  }
+  const gapCls = opts?.gap ? ' gap-pill' : '';
+  return `<div class="skill-pill ${catCls}${gapCls}${droppedCls}"
+    id="${sid}"
+    draggable="true"
+    data-skill="${esc(name)}"
+    data-cat="${esc(cat||'')}"
+    data-gap="${opts?.gap ? '1' : '0'}">
+    <span style="flex:1">${esc(name)}</span>
+    ${confirmHtml}
+  </div>`;
+}
+
+function renderSkillSortPhase() {
+  const clusters = APP.roleData.clusters;
+  const skills = APP.roleData.skills;
+
+  // Sort clusters by result level (most human first)
+  const sortedClusters = [...clusters].sort((a, b) => {
+    const la = LEVEL[APP.results[a.id] || 'auto'] || 0;
+    const lb = LEVEL[APP.results[b.id] || 'auto'] || 0;
+    return lb - la;
+  });
+
+  // Pool skills — sorted by category: Foundational → Core → Baseline
+  const CAT_ORDER = ['Foundational & Leadership Skills','Core Role-Specific Skills','Baseline Applied Skills'];
+  const sortedSkills = [...skills].sort((a,b) => {
+    return (CAT_ORDER.indexOf(a.cat) === -1 ? 99 : CAT_ORDER.indexOf(a.cat)) -
+           (CAT_ORDER.indexOf(b.cat) === -1 ? 99 : CAT_ORDER.indexOf(b.cat));
+  });
+  let poolHtml = '';
+  sortedSkills.forEach(s => {
+    if (APP.placements[s.name] === 'pool') {
+      poolHtml += makePill(s.name, s.cat, {});
+    }
+  });
+  APP.newSkills.filter(ns => ns.clusterId === 'pool').forEach(ns => {
+    poolHtml += makePill(ns.name, null, { gap: true });
+  });
+
+  // Cluster columns (4-col grid)
+  let colsHtml = '';
+  for (const cluster of sortedClusters) {
+    const bucket = APP.results[cluster.id] || 'auto';
+    const bkt = BUCKETS[bucket];
+    const claimedSkills = skills.filter(s => APP.placements[s.name] === cluster.id);
+    const claimedNew = APP.newSkills.filter(ns => ns.clusterId === cluster.id);
+
+    let pillsHtml = claimedSkills.map(s => makePill(s.name, s.cat, { bucket })).join('');
+    pillsHtml += claimedNew.map(ns => makePill(ns.name, null, { gap:true, bucket })).join('');
+    if (!pillsHtml) pillsHtml = '<div class="empty-hint">Drop skills here</div>';
+
+    const tip = GAP_TIPS[bucket] || '';
+    const fateText = bucket === 'hl' ? 'Skills here: <strong>Deepen</strong>' :
+                     bucket === 'hitl' ? 'Skills here: <strong>Persist</strong>' :
+                     'Skills here: <strong>Potential Drop</strong>';
+
+    colsHtml += `<div class="cluster-col" data-cid="${cluster.id}">
+      <div class="cluster-col-header" style="background:${bkt.color}">
+        <div class="bucket-badge">${esc(bkt.label)}</div>
+        <h3>${esc(cluster.label)}</h3>
+        <div style="font-size:11px;color:rgba(255,255,255,.6);margin-top:4px">${fateText}</div>
+      </div>
+      <div class="cluster-drop-zone" data-cid="${cluster.id}">${pillsHtml}</div>
+      <div class="gap-wrap" data-tip="${esc(tip)}">
+        <button class="gap-btn" onclick="showGapInput('${cluster.id}')">+ Add gap skill</button>
+        <div class="gap-input-wrap hidden" id="gap-input-${cluster.id}">
+          <input type="text" id="gap-text-${cluster.id}" placeholder="Skill name…" onkeydown="if(event.key==='Enter')commitGap('${cluster.id}')">
+          <button onclick="commitGap('${cluster.id}')">Add</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // Summary table — per-skill fate (initial render, all in pool = Unassigned)
+  const CAT_ORDER_SS = ['Foundational & Leadership Skills','Core Role-Specific Skills','Baseline Applied Skills'];
+  const tbRows = [...sortedSkills].sort((a,b) => {
+    const ai = CAT_ORDER_SS.indexOf(a.cat); const bi = CAT_ORDER_SS.indexOf(b.cat);
+    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+  }).map(s => {
+    const fate = skillFate(s.name, false);
+    return `<tr><td><strong>${esc(s.name)}</strong></td><td style="color:#888;font-size:11px">${esc(s.cat)}</td><td><span class="tb-badge ${fate.cls}">${fate.label}</span></td></tr>`;
+  }).join('');
+
+  document.getElementById('phase-skills').innerHTML = `
+    <div class="ss-header">
+      <h2>Skill Sort — ${esc(APP.role)}</h2>
+      <p>Drag each skill into the cluster where it matters most. For HOTL and Full Auto clusters, confirm which skills can be dropped.</p>
+    </div>
+    <div class="ss-pool-label">Skill Pool <span style="font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;color:#aaa">— drag pills into clusters below</span></div>
+    <div id="pool-drop-zone" data-cid="pool">${poolHtml}</div>
+    <div class="cat-legend">
+      <span><span class="legend-dot" style="background:#2C5F8A"></span>Foundational &amp; Leadership</span>
+      <span><span class="legend-dot" style="background:#5A7A3A"></span>Core Role-Specific</span>
+      <span><span class="legend-dot" style="background:#7A5A2A"></span>Baseline Applied</span>
+    </div>
+    <div class="seq-bar">Most human oversight <div class="seq-line"></div> Full Auto</div>
+    <div id="ss-columns">${colsHtml}</div>
+    <div class="ss-summary">
+      <h3>Skill Fate Summary</h3>
+      <table class="summary-table" id="ss-summary">
+        <thead><tr>
+          <th>Skill</th><th>Category</th><th>Fate</th>
+        </tr></thead>
+        <tbody>${tbRows}</tbody>
+      </table>
+      <div class="export-row">
+        <button class="btn-export" onclick="downloadReport()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download Report
+        </button>
+      </div>
+    </div>
+  `;
+
+  initDragDrop();
+}
+
+function skillFate(skillName, isGap) {
+  if (APP.drops[skillName]) return { label: 'Dropped', cls: 'fate-dropped' };
+  // Gap skills always read as "New Skill" — they're additive, not subject to displacement logic
+  if (isGap) return { label: 'New Skill', cls: 'fate-new' };
+  let placement = APP.placements[skillName];
+  if (!placement || placement === 'pool') return { label: 'Unassigned', cls: 'fate-unassigned' };
+  const bucket = APP.results[placement] || 'auto';
+  if (bucket === 'hl')   return { label: 'Deepens', cls: 'fate-deepens' };
+  if (bucket === 'hitl') return { label: 'Persists', cls: 'fate-persists' };
+  return { label: 'Potential Drop', cls: 'fate-drop' };
+}
+
+function updateSummary() {
+  const skills = APP.roleData.skills;
+  const CAT_ORDER = ['Foundational & Leadership Skills','Core Role-Specific Skills','Baseline Applied Skills'];
+  const allSkills = [...skills].sort((a,b) => {
+    const ai = CAT_ORDER.indexOf(a.cat); const bi = CAT_ORDER.indexOf(b.cat);
+    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+  });
+  // Include gap skills too
+  const allEntries = [
+    ...allSkills.map(s => ({ name: s.name, cat: s.cat, gap: false })),
+    ...APP.newSkills.map(ns => ({ name: ns.name, cat: 'Gap Skill', gap: true })),
+  ];
+  let tbRows = '';
+  for (const s of allEntries) {
+    const fate = skillFate(s.name, s.gap);
+    const isDropped = APP.drops[s.name];
+    tbRows += `<tr class="${isDropped ? 'skill-dropped' : ''}">
+      <td><strong>${esc(s.name)}</strong></td>
+      <td style="color:#888;font-size:11px">${esc(s.cat)}</td>
+      <td><span class="tb-badge ${fate.cls}">${fate.label}</span></td>
+    </tr>`;
+  }
+  const tbody = document.querySelector('#ss-summary tbody');
+  if (tbody) tbody.innerHTML = tbRows;
+}
+
+function downloadReport() {
+  const role = APP.role || 'Unknown Role';
+  const clusters = APP.roleData.clusters;
+  const skills = APP.roleData.skills;
+  const date = new Date().toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
+
+  const BL = { hl:'Human-Led', hitl:'Human-in-the-Loop (HITL)', hotl:'Human-on-the-Loop (HOTL)', auto:'Full Auto' };
+  const BC = { hl:'#7B2020', hitl:'#B85520', hotl:'#9B7200', auto:'#4a4a4a' };
+
+  // Task routing rows
+  let taskRows = '';
+  for (const c of clusters) {
+    const bucket = APP.results[c.id] || 'auto';
+    const constraint = APP.constraints[c.id]?.label || 'None — defaults to Full Auto';
+    taskRows += `<tr>
+      <td><strong>${esc(c.label)}</strong><br><span style="color:#999;font-size:11px">${esc(c.description || '')}</span></td>
+      <td><span class="bucket-badge" style="background:${BC[bucket]}">${BL[bucket]}</span></td>
+      <td>${esc(constraint)}</td>
+    </tr>`;
+  }
+
+  // Skill fate rows — sorted Foundational → Core → Baseline, gap skills at end
+  const FATE_META = {
+    'Deepens':        { color:'#1A2A4A', takeaway:'Human expertise becomes the key differentiator here — this skill is worth investing in as AI takes over routine work.' },
+    'Persists':       { color:'#B85520', takeaway:'Remains essential with AI in the loop — workers still own the output and must review every result.' },
+    'Potential Drop': { color:'#9B7200', takeaway:'At risk of automation — confirm whether meaningful human judgment is still required once AI handles this work.' },
+    'Dropped':        { color:'#7B2020', takeaway:'Confirmed automatable — consider redirecting development investment to skills that deepen or persist.' },
+    'New Skill':      { color:'#2C6E8A', takeaway:'Identified as a gap — this skill needs to be built or acquired to support the team\'s AI-augmented workflow.' },
+    'Unassigned':     { color:'#aaa',    takeaway:'Not yet placed in the skill sort exercise — revisit this skill.' },
+  };
+  const CAT_ORDER_R = ['Foundational & Leadership Skills','Core Role-Specific Skills','Baseline Applied Skills'];
+  const sortedSkillsR = [...skills].sort((a,b) => {
+    const ai = CAT_ORDER_R.indexOf(a.cat); const bi = CAT_ORDER_R.indexOf(b.cat);
+    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+  });
+  const allEntries = [
+    ...sortedSkillsR.map(s => ({ name:s.name, cat:s.cat, gap:false })),
+    ...APP.newSkills.map(ns => ({ name:ns.name, cat:'Gap Skill (added)', gap:true }))
+  ];
+
+  let skillRows = '';
+  for (const s of allEntries) {
+    const fate = skillFate(s.name, s.gap);
+    const isDropped = APP.drops[s.name];
+    const fm = FATE_META[fate.label] || FATE_META['Unassigned'];
+    skillRows += `<tr${isDropped ? ' class="dropped-row"' : ''}>
+      <td><strong>${esc(s.name)}</strong>${s.gap ? '<br><em style="color:#aaa;font-size:10.5px">gap skill</em>' : ''}</td>
+      <td style="color:#777;font-size:11.5px">${esc(s.cat)}</td>
+      <td style="white-space:nowrap"><span class="fate-badge" style="background:${fm.color}">${fate.label}</span></td>
+      <td style="color:#555;font-size:11.5px">${fm.takeaway}</td>
+    </tr>`;
+  }
+
+  const html = `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<title>AI Routing Workshop — ${esc(role)}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',Arial,sans-serif;max-width:960px;margin:40px auto;padding:0 24px;color:#1a1a1a;font-size:13px;line-height:1.5}
+  .rpt-header{background:#1A2A4A;color:#fff;padding:28px 32px;border-radius:10px 10px 0 0}
+  .rpt-header h1{font-size:22px;font-weight:700;margin-bottom:4px}
+  .rpt-header .meta{opacity:.65;font-size:12px}
+  .rpt-body{background:#fff;border:1px solid #e0deda;border-top:none;border-radius:0 0 10px 10px;padding:28px 32px}
+  h2{font-size:13px;font-weight:700;color:#1A2A4A;margin:28px 0 12px;padding-bottom:6px;border-bottom:2px solid #1A2A4A;text-transform:uppercase;letter-spacing:.06em}
+  h2:first-child{margin-top:0}
+  table{width:100%;border-collapse:collapse;margin-bottom:8px;font-size:12.5px}
+  th{background:#1A2A4A;color:#fff;padding:9px 12px;text-align:left;font-weight:600;font-size:11.5px}
+  td{padding:9px 12px;border-bottom:1px solid #eeede9;vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  .bucket-badge{display:inline-block;padding:3px 11px;border-radius:4px;color:#fff;font-weight:700;font-size:11px;white-space:nowrap}
+  .fate-badge{display:inline-block;padding:3px 10px;border-radius:4px;color:#fff;font-weight:700;font-size:11px}
+  .dropped-row td{opacity:.45}
+  .dropped-row td:nth-child(3),.dropped-row td:nth-child(4){opacity:1}
+  .legend{margin-top:20px;padding:14px 16px;background:#f7f6f3;border-radius:6px;font-size:11.5px;color:#666}
+  .legend strong{color:#1A2A4A}
+  .legend ul{margin:6px 0 0 16px;line-height:1.9}
+  .footer{margin-top:24px;font-size:11px;color:#bbb;text-align:center;padding-top:16px;border-top:1px solid #eee}
+  @media print{body{margin:0;padding:16px}.rpt-header{border-radius:0}}
+</style></head>
+<body>
+<div class="rpt-header">
+  <h1>AI Routing Workshop Report</h1>
+  <div class="meta">${esc(role)} &nbsp;·&nbsp; Generated ${date} &nbsp;·&nbsp; SFWI Workshop</div>
+</div>
+<div class="rpt-body">
+  <h2>Task Cluster Routings</h2>
+  <table>
+    <thead><tr><th>Cluster</th><th>Routing Decision</th><th>Binding Constraint</th></tr></thead>
+    <tbody>${taskRows}</tbody>
+  </table>
+
+  <h2>Skill Implications</h2>
+  <table>
+    <thead><tr><th>Skill</th><th>Category</th><th>Fate</th><th>Takeaway</th></tr></thead>
+    <tbody>${skillRows}</tbody>
+  </table>
+
+  <div class="legend">
+    <strong>How to read skill fates:</strong>
+    <ul>
+      <li><strong>Deepens</strong> — Human expertise is the differentiator; invest in development of this skill.</li>
+      <li><strong>Persists</strong> — Skill remains essential; AI assists but humans own every output.</li>
+      <li><strong>Potential Drop</strong> — At risk; confirm whether meaningful human judgment is still required.</li>
+      <li><strong>Dropped</strong> — Confirmed automatable; redirect development investment.</li>
+    </ul>
+  </div>
+  <div class="footer">SFWI AI Routing Workshop &nbsp;·&nbsp; Burning Glass Institute</div>
+</div>
+</body></html>`;
+
+  const blob = new Blob([html], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'SFWI-Workshop-' + role.replace(/[^a-zA-Z0-9]+/g,'-') + '-' + new Date().toISOString().slice(0,10) + '.html';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+}
+
+function toggleDrop(skillName, checked) {
+  APP.drops[skillName] = checked;
+  const sid = skillId(skillName);
+  const pill = document.getElementById(sid);
+  if (pill) {
+    if (checked) pill.classList.add('dropped');
+    else pill.classList.remove('dropped');
+  }
+  updateSummary();
+}
+
+function showGapInput(clusterId) {
+  const wrap = document.getElementById('gap-input-' + clusterId);
+  if (wrap) {
+    wrap.classList.toggle('hidden');
+    const inp = document.getElementById('gap-text-' + clusterId);
+    if (inp && !wrap.classList.contains('hidden')) inp.focus();
+  }
+}
+
+function commitGap(clusterId) {
+  const inp = document.getElementById('gap-text-' + clusterId);
+  const name = inp ? inp.value.trim() : '';
+  if (!name) return;
+  const existing = APP.newSkills.find(ns => ns.name === name);
+  if (existing) return;
+  const ns = { name, clusterId, id: 'gap_' + Date.now() };
+  APP.newSkills.push(ns);
+  // Add pill to drop zone
+  const bucket = APP.results[clusterId] || 'auto';
+  const zone = document.querySelector(`.cluster-drop-zone[data-cid="${clusterId}"]`);
+  if (zone) {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = makePill(name, null, { gap:true, bucket });
+    zone.appendChild(tmp.firstElementChild);
+  }
+  inp.value = '';
+  document.getElementById('gap-input-' + clusterId).classList.add('hidden');
+  updateSummary();
+}
+
+// ─── DRAG AND DROP ────────────────────────────────────────────
+function initDragDrop() {
+  if (dragDropInitialized) return;
+  dragDropInitialized = true;
+
+  document.addEventListener('dragstart', e => {
+    const pill = e.target.closest('.skill-pill');
+    if (!pill) return;
+    draggingId = pill.dataset.skill;
+    pill.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', draggingId);
+  });
+
+  document.addEventListener('dragend', e => {
+    document.querySelectorAll('.skill-pill.dragging').forEach(p => p.classList.remove('dragging'));
+    document.querySelectorAll('.drag-over').forEach(z => z.classList.remove('drag-over'));
+    draggingId = null;
+  });
+
+  document.addEventListener('dragover', e => {
+    const zone = e.target.closest('.drop-zone, .cluster-drop-zone');
+    if (!zone) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    document.querySelectorAll('.drag-over').forEach(z => z.classList.remove('drag-over'));
+    zone.classList.add('drag-over');
+  });
+
+  document.addEventListener('drop', e => {
+    const zone = e.target.closest('.drop-zone, .cluster-drop-zone');
+    if (!zone || !draggingId) return;
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+    const skillName = draggingId;
+    const targetCid = zone.dataset.cid;
+    movePill(skillName, targetCid, zone);
+  });
+}
+
+function movePill(skillName, targetCid, targetZone) {
+  const sid = skillId(skillName);
+  const pill = document.getElementById(sid);
+  if (!pill) return;
+
+  APP.placements[skillName] = targetCid;
+
+  // Update confirm checkbox visibility based on target bucket
+  const bucket = targetCid === 'pool' ? null : (APP.results[targetCid] || 'auto');
+  const needsConfirm = bucket === 'hotl' || bucket === 'auto';
+  const existingConfirm = pill.querySelector('.pill-drop-confirm');
+  if (needsConfirm && !existingConfirm) {
+    const isDropped = APP.drops[skillName];
+    const confirmSpan = document.createElement('span');
+    confirmSpan.className = 'pill-drop-confirm';
+    confirmSpan.innerHTML = `<input type="checkbox" id="dc_${sid}" ${isDropped?'checked':''} onchange="toggleDrop('${esc(skillName)}',this.checked)" title="Confirm this skill can be dropped"><label for="dc_${sid}">Drop</label>`;
+    pill.appendChild(confirmSpan);
+  } else if (!needsConfirm && existingConfirm) {
+    existingConfirm.remove();
+  }
+
+  targetZone.appendChild(pill);
+
+  // Update pool placeholder
+  const poolZone = document.getElementById('pool-drop-zone');
+  if (poolZone) {
+    const hasPills = poolZone.querySelector('.skill-pill');
+    let placeholder = poolZone.querySelector('.pool-placeholder');
+    if (!hasPills && !placeholder) {
+      placeholder = document.createElement('div');
+      placeholder.className = 'pool-placeholder';
+      placeholder.style.cssText = 'font-size:12px;color:#aaa;text-align:center;padding:10px';
+      placeholder.textContent = 'All skills placed';
+      poolZone.appendChild(placeholder);
+    } else if (hasPills && placeholder) {
+      placeholder.remove();
+    }
+  }
+
+  updateSummary();
+}
+
+// ─── UTILITY ──────────────────────────────────────────────────
+function esc(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+
+// ─── INIT ─────────────────────────────────────────────────────
+renderRolePhase();
+</script>
+</body>
+</html>
