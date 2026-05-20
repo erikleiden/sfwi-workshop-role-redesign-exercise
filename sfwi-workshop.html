@@ -193,6 +193,35 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#EDECEA;min-heigh
 .btn-export:hover{background:#2a3d5e}
 .btn-export svg{flex-shrink:0}
 
+/* FATE OVERRIDE SELECT — looks like a badge with a dropdown arrow */
+.fate-select{appearance:none;-webkit-appearance:none;border:none;border-radius:10px;padding:3px 22px 3px 10px;color:#fff;font-size:11px;font-weight:700;cursor:pointer;outline:none;background-repeat:no-repeat;background-position:right 7px center;background-size:8px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 24 24'%3E%3Cpath fill='rgba(255,255,255,.7)' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E")}
+.fate-select.sel-deepens{background-color:#1A2A4A}
+.fate-select.sel-persists{background-color:#B85520}
+.fate-select.sel-drop{background-color:#9B7200}
+.fate-select.sel-dropped{background-color:#7B2020}
+.fate-select.sel-unassigned{background-color:#aaa}
+.fate-select option{color:#333;background:#fff}
+
+/* BEFORE/AFTER SECTION */
+.ba-section{margin-top:28px}
+.ba-section h3{font-size:14px;font-weight:700;color:#1A2A4A;margin-bottom:10px}
+.ba-stats{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px}
+.ba-stat{padding:5px 13px;border-radius:20px;font-size:12px;font-weight:700;color:#fff;white-space:nowrap}
+.ba-stat.deepens{background:#1A2A4A}.ba-stat.persists{background:#B85520}.ba-stat.drop{background:#9B7200}.ba-stat.dropped{background:#7B2020}.ba-stat.new{background:#2C6E8A}.ba-stat.unassigned{background:#bbb}
+.ba-table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.07);font-size:12px}
+.ba-table th{background:#1A2A4A;color:#fff;padding:9px 12px;text-align:left;font-weight:600}
+.ba-table td{padding:8px 12px;border-bottom:1px solid #f0efed;vertical-align:middle}
+.ba-table tr:last-child td{border-bottom:none}
+.ba-table tr:hover td{background:#fafaf9}
+.ba-table tr.ba-dropped td{opacity:.45}
+.ba-table tr.ba-dropped td:last-child{opacity:1}
+.ba-badge-before{padding:2px 10px;border-radius:10px;font-size:11px;font-weight:600;background:#EDECEA;color:#777;white-space:nowrap}
+.ba-change{font-size:17px;line-height:1;font-weight:700}
+
+/* BACK BUTTON in skills phase */
+.btn-back{background:none;border:1px solid #ccc;color:#666;font-size:12px;font-weight:600;padding:5px 12px;border-radius:5px;cursor:pointer;margin-top:6px}
+.btn-back:hover{border-color:#888;color:#333}
+
 /* SKILL CAT COLORS */
 .cat-foundational{background:#2C5F8A}
 .cat-core{background:#5A7A3A}
@@ -1089,6 +1118,7 @@ let APP = {
   placements: {},   // skillName → clusterId | 'pool'
   drops: {},        // skillName → true
   newSkills: [],    // [{name, clusterId, id}]
+  fateOverrides: {}, // skillName → 'deepens'|'persists'|'potential-drop'|'dropped'
 };
 
 let dragDropInitialized = false;
@@ -1281,9 +1311,37 @@ function toggleTasks(btn) {
   btn.classList.toggle('open', !open);
 }
 
+function goBackToRouting() {
+  // Return to the last cluster without wiping placements or results
+  APP.clusterIdx = APP.roleData.clusters.length - 1;
+  showPhase('routing');
+}
+
+function setFateOverride(skillName, value) {
+  // Clear existing state
+  if (APP.drops[skillName]) {
+    delete APP.drops[skillName];
+    const sid = skillId(skillName);
+    const pill = document.getElementById(sid);
+    if (pill) pill.classList.remove('dropped');
+  }
+  if (value === '' || value == null) {
+    delete APP.fateOverrides[skillName];
+  } else if (value === 'dropped') {
+    delete APP.fateOverrides[skillName];
+    APP.drops[skillName] = true;
+    const sid = skillId(skillName);
+    const pill = document.getElementById(sid);
+    if (pill) pill.classList.add('dropped');
+  } else {
+    APP.fateOverrides[skillName] = value;
+  }
+  updateSummary();
+}
+
 function resetAll() {
   APP = { phase:'role', role:null, roleData:null, clusterIdx:0,
-          answers:{}, results:{}, constraints:{}, placements:{}, drops:{}, newSkills:[] };
+          answers:{}, results:{}, constraints:{}, placements:{}, drops:{}, newSkills:[], fateOverrides:{} };
   dragDropInitialized = false;
   showPhase('role');
 }
@@ -1458,8 +1516,10 @@ function nextCluster() {
   APP.results[cluster.id] = bucket;
   if (sourceQId) APP.constraints[cluster.id] = { qId: sourceQId, label: sourceLabel };
   if (idx === clusters.length - 1) {
-    // Initialize placements
-    APP.roleData.skills.forEach(s => { APP.placements[s.name] = 'pool'; });
+    // Initialize placements only on first visit (preserve any work done so far)
+    if (Object.keys(APP.placements).length === 0) {
+      APP.roleData.skills.forEach(s => { APP.placements[s.name] = 'pool'; });
+    }
     showPhase('skills');
   } else {
     APP.clusterIdx++;
@@ -1582,6 +1642,7 @@ function renderSkillSortPhase() {
     <div class="ss-header">
       <h2>Skill Sort — ${esc(APP.role)}</h2>
       <p>Drag each skill into the cluster where it matters most. For HOTL and Full Auto clusters, confirm which skills can be dropped.</p>
+      <button class="btn-back" onclick="goBackToRouting()">← Back to Routing</button>
     </div>
     <div class="ss-pool-label">Skill Pool <span style="font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;color:#aaa">— drag pills into clusters below</span></div>
     <div id="pool-drop-zone" data-cid="pool">${poolHtml}</div>
@@ -1593,29 +1654,37 @@ function renderSkillSortPhase() {
     <div class="seq-bar">Most human oversight <div class="seq-line"></div> Full Auto</div>
     <div id="ss-columns" style="grid-template-columns:repeat(${sortedClusters.length},1fr)">${colsHtml}</div>
     <div class="ss-summary">
-      <h3>Skill Fate Summary</h3>
+      <h3>Skill Fate Summary <span style="font-size:11px;font-weight:400;color:#999;letter-spacing:0">— adjust a fate by clicking the badge</span></h3>
       <table class="summary-table" id="ss-summary">
         <thead><tr>
           <th>Skill</th><th>Category</th><th>Fate</th>
         </tr></thead>
         <tbody>${tbRows}</tbody>
       </table>
-      <div class="export-row">
+    </div>
+    <div id="ba-section" class="ba-section"></div>
+    <div class="export-row">
         <button class="btn-export" onclick="downloadReport()">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Download Report
         </button>
       </div>
-    </div>
   `;
 
   initDragDrop();
+  updateSummary(); // populate ba-section and sync override selects on initial render
 }
 
 function skillFate(skillName, isGap) {
   if (APP.drops[skillName]) return { label: 'Dropped', cls: 'fate-dropped' };
   // Gap skills always read as "New Skill" — they're additive, not subject to displacement logic
   if (isGap) return { label: 'New Skill', cls: 'fate-new' };
+  // Manual override (only applies to placed skills)
+  const ov = APP.fateOverrides?.[skillName];
+  if (ov === 'deepens')         return { label: 'Deepens',        cls: 'fate-deepens' };
+  if (ov === 'persists')        return { label: 'Persists',       cls: 'fate-persists' };
+  if (ov === 'potential-drop')  return { label: 'Potential Drop', cls: 'fate-drop' };
+  // Auto-compute from placement
   let placement = APP.placements[skillName];
   if (!placement || placement === 'pool') return { label: 'Unassigned', cls: 'fate-unassigned' };
   const bucket = APP.results[placement] || 'auto';
@@ -1631,23 +1700,116 @@ function updateSummary() {
     const ai = CAT_ORDER.indexOf(a.cat); const bi = CAT_ORDER.indexOf(b.cat);
     return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
   });
-  // Include gap skills too
   const allEntries = [
     ...allSkills.map(s => ({ name: s.name, cat: s.cat, gap: false })),
     ...APP.newSkills.map(ns => ({ name: ns.name, cat: 'Gap Skill', gap: true })),
   ];
+
+  // ── Fate summary table (with override select for placed skills) ──
   let tbRows = '';
   for (const s of allEntries) {
     const fate = skillFate(s.name, s.gap);
     const isDropped = APP.drops[s.name];
+    const isPlaced = !s.gap && APP.placements[s.name] && APP.placements[s.name] !== 'pool';
+    const override = APP.fateOverrides?.[s.name] || '';
+    const selCls = 'sel-' + fate.cls.replace('fate-','');
+
+    let fateCell;
+    if (isPlaced) {
+      // Auto label reflects the computed (non-override) fate for context
+      const autoFateLabel = (() => {
+        const p = APP.placements[s.name];
+        const bkt = APP.results[p] || 'auto';
+        if (bkt === 'hl') return 'Deepens'; if (bkt === 'hitl') return 'Persists';
+        return 'Potential Drop';
+      })();
+      fateCell = `<select class="fate-select ${selCls}" onchange="setFateOverride('${esc(s.name)}',this.value)">
+        <option value="" ${override===''?'selected':''}>Auto (${esc(autoFateLabel)})</option>
+        <option value="deepens" ${override==='deepens'?'selected':''}>Deepens</option>
+        <option value="persists" ${override==='persists'?'selected':''}>Persists</option>
+        <option value="potential-drop" ${override==='potential-drop'?'selected':''}>Potential Drop</option>
+        <option value="dropped" ${isDropped?'selected':''}>Dropped</option>
+      </select>`;
+    } else {
+      fateCell = `<span class="tb-badge ${fate.cls}">${fate.label}</span>`;
+    }
+
     tbRows += `<tr class="${isDropped ? 'skill-dropped' : ''}">
       <td><strong>${esc(s.name)}</strong></td>
       <td style="color:#888;font-size:11px">${esc(s.cat)}</td>
-      <td><span class="tb-badge ${fate.cls}">${fate.label}</span></td>
+      <td>${fateCell}</td>
     </tr>`;
   }
   const tbody = document.querySelector('#ss-summary tbody');
   if (tbody) tbody.innerHTML = tbRows;
+
+  // ── Before/After section ──────────────────────────────────────
+  const FATE_SORT = { 'Dropped':0,'Potential Drop':1,'Persists':2,'Deepens':3,'New Skill':4,'Unassigned':5 };
+  const CHANGE_ICON = {
+    'Deepens':        '<span class="ba-change" style="color:#1A2A4A">↑</span>',
+    'Persists':       '<span class="ba-change" style="color:#B85520">→</span>',
+    'Potential Drop': '<span class="ba-change" style="color:#9B7200">↓</span>',
+    'Dropped':        '<span class="ba-change" style="color:#7B2020">✕</span>',
+    'New Skill':      '<span class="ba-change" style="color:#2C6E8A">+</span>',
+    'Unassigned':     '<span class="ba-change" style="color:#ccc">·</span>',
+  };
+
+  const sorted = [...allEntries].sort((a,b) => {
+    const fa = skillFate(a.name, a.gap).label;
+    const fb = skillFate(b.name, b.gap).label;
+    return (FATE_SORT[fa] ?? 5) - (FATE_SORT[fb] ?? 5);
+  });
+
+  // Stats bar counts
+  const counts = { deepens:0, persists:0, drop:0, dropped:0, new:0, unassigned:0 };
+  for (const s of allEntries) {
+    const f = skillFate(s.name, s.gap).label;
+    if (f === 'Deepens') counts.deepens++;
+    else if (f === 'Persists') counts.persists++;
+    else if (f === 'Potential Drop') counts.drop++;
+    else if (f === 'Dropped') counts.dropped++;
+    else if (f === 'New Skill') counts.new++;
+    else counts.unassigned++;
+  }
+  let statsHtml = '';
+  if (counts.deepens)    statsHtml += `<span class="ba-stat deepens">↑ ${counts.deepens} Deepening</span>`;
+  if (counts.persists)   statsHtml += `<span class="ba-stat persists">→ ${counts.persists} Persisting</span>`;
+  if (counts.drop)       statsHtml += `<span class="ba-stat drop">↓ ${counts.drop} At Risk</span>`;
+  if (counts.dropped)    statsHtml += `<span class="ba-stat dropped">✕ ${counts.dropped} Dropped</span>`;
+  if (counts.new)        statsHtml += `<span class="ba-stat new">+ ${counts.new} New</span>`;
+  if (counts.unassigned) statsHtml += `<span class="ba-stat unassigned">· ${counts.unassigned} Unplaced</span>`;
+
+  let baRows = '';
+  for (const s of sorted) {
+    const fate = skillFate(s.name, s.gap);
+    const isDropped = APP.drops[s.name];
+    const beforeCell = s.gap
+      ? `<span style="color:#bbb;font-size:12px">— (not yet in role)</span>`
+      : `<span class="ba-badge-before">Present</span>`;
+    baRows += `<tr class="${isDropped?'ba-dropped':''}">
+      <td><strong>${esc(s.name)}</strong>${s.gap?'<br><em style="color:#aaa;font-size:10.5px">gap skill</em>':''}</td>
+      <td style="color:#888;font-size:11px">${esc(s.cat)}</td>
+      <td>${beforeCell}</td>
+      <td style="text-align:center;width:32px">${CHANGE_ICON[fate.label]||''}</td>
+      <td><span class="tb-badge ${fate.cls}">${fate.label}</span></td>
+    </tr>`;
+  }
+
+  const baEl = document.getElementById('ba-section');
+  if (baEl) {
+    baEl.innerHTML = `
+      <h3>Before &amp; After AI Integration</h3>
+      <div class="ba-stats">${statsHtml || '<span style="color:#aaa;font-size:12px">Place skills into clusters to see the impact.</span>'}</div>
+      <table class="ba-table">
+        <thead><tr>
+          <th>Skill</th><th>Category</th>
+          <th>Today (Pre-AI)</th>
+          <th style="width:32px;text-align:center"></th>
+          <th>After AI Integration</th>
+        </tr></thead>
+        <tbody>${baRows}</tbody>
+      </table>`;
+  }
 }
 
 function downloadReport() {
@@ -1771,7 +1933,12 @@ function downloadReport() {
 }
 
 function toggleDrop(skillName, checked) {
-  APP.drops[skillName] = checked;
+  if (checked) {
+    APP.drops[skillName] = true;
+    delete APP.fateOverrides[skillName]; // drop checkbox wins over override
+  } else {
+    delete APP.drops[skillName];
+  }
   const sid = skillId(skillName);
   const pill = document.getElementById(sid);
   if (pill) {
