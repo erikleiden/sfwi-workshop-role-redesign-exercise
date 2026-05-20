@@ -148,6 +148,16 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#EDECEA;min-heigh
 /* Drop zones */
 .cluster-drop-zone{background:#FAF9F7;flex:1;min-height:190px;padding:10px;display:flex;flex-direction:column;gap:6px;align-content:flex-start;transition:background .12s;overflow:hidden}
 .cluster-drop-zone.drag-over{background:#F0EEE8}
+/* Transversal zone */
+.transversal-zone{background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.10);margin-bottom:20px;overflow:hidden}
+.transversal-zone-hdr{background:#3D5A6B;padding:11px 16px;display:flex;align-items:center;gap:14px}
+.transversal-zone-hdr h3{font-size:13px;font-weight:700;color:#fff;margin:0;white-space:nowrap}
+.transversal-zone-hdr span{font-size:11px;color:rgba(255,255,255,.65)}
+.transversal-drop-zone{min-height:56px;padding:10px 12px;flex:none;flex-direction:row;flex-wrap:wrap;overflow:visible;background:#F4F6F8;transition:background .12s}
+.transversal-drop-zone.drag-over{background:#E5ECF0}
+.tb-badge.fate-foundational{background:#3D5A6B}
+.fate-select.sel-foundational{background-color:#3D5A6B}
+.ba-stat.foundational{background:#3D5A6B}
 .cluster-drop-zone .empty-hint{font-size:11px;color:#C8C7C0;text-align:center;padding:18px 8px;font-style:italic;pointer-events:none}
 
 /* Skill pills */
@@ -1594,6 +1604,18 @@ function renderSkillSortPhase() {
     poolHtml += makePill(ns.name, null, { gap: true });
   });
 
+  // Transversal zone pills
+  let transversalHtml = '';
+  sortedSkills.forEach(s => {
+    if (APP.placements[s.name] === 'transversal') {
+      transversalHtml += makePill(s.name, s.cat, {});
+    }
+  });
+  APP.newSkills.filter(ns => ns.clusterId === 'transversal').forEach(ns => {
+    transversalHtml += makePill(ns.name, null, { gap: true });
+  });
+  const transversalPillsHtml = transversalHtml || '<div class="empty-hint">Drop cross-cutting skills here</div>';
+
   // Cluster columns (4-col grid)
   let colsHtml = '';
   for (const cluster of sortedClusters) {
@@ -1653,6 +1675,13 @@ function renderSkillSortPhase() {
     </div>
     <div class="seq-bar">Most human oversight <div class="seq-line"></div> Full Auto</div>
     <div id="ss-columns" style="grid-template-columns:repeat(${sortedClusters.length},1fr)">${colsHtml}</div>
+    <div class="transversal-zone">
+      <div class="transversal-zone-hdr">
+        <h3>Foundational / Transversal</h3>
+        <span>Cross-cutting skills that apply across all clusters — not tied to any single task group</span>
+      </div>
+      <div class="transversal-drop-zone cluster-drop-zone" data-cid="transversal">${transversalPillsHtml}</div>
+    </div>
     <div class="ss-summary">
       <h3>Skill Fate Summary <span style="font-size:11px;font-weight:400;color:#999;letter-spacing:0">— adjust a fate by clicking the badge</span></h3>
       <table class="summary-table" id="ss-summary">
@@ -1687,6 +1716,7 @@ function skillFate(skillName, isGap) {
   // Auto-compute from placement
   let placement = APP.placements[skillName];
   if (!placement || placement === 'pool') return { label: 'Unassigned', cls: 'fate-unassigned' };
+  if (placement === 'transversal') return { label: 'Foundational', cls: 'fate-foundational' };
   const bucket = APP.results[placement] || 'auto';
   if (bucket === 'hl')   return { label: 'Deepens', cls: 'fate-deepens' };
   if (bucket === 'hitl') return { label: 'Persists', cls: 'fate-persists' };
@@ -1719,6 +1749,7 @@ function updateSummary() {
       // Auto label reflects the computed (non-override) fate for context
       const autoFateLabel = (() => {
         const p = APP.placements[s.name];
+        if (p === 'transversal') return 'Foundational';
         const bkt = APP.results[p] || 'auto';
         if (bkt === 'hl') return 'Deepens'; if (bkt === 'hitl') return 'Persists';
         return 'Potential Drop';
@@ -1744,13 +1775,14 @@ function updateSummary() {
   if (tbody) tbody.innerHTML = tbRows;
 
   // ── Before/After section ──────────────────────────────────────
-  const FATE_SORT = { 'Dropped':0,'Potential Drop':1,'Persists':2,'Deepens':3,'New Skill':4,'Unassigned':5 };
+  const FATE_SORT = { 'Dropped':0,'Potential Drop':1,'Persists':2,'Foundational':2.5,'Deepens':3,'New Skill':4,'Unassigned':5 };
   const CHANGE_ICON = {
     'Deepens':        '<span class="ba-change" style="color:#1A2A4A">↑</span>',
     'Persists':       '<span class="ba-change" style="color:#B85520">→</span>',
     'Potential Drop': '<span class="ba-change" style="color:#9B7200">↓</span>',
     'Dropped':        '<span class="ba-change" style="color:#7B2020">✕</span>',
     'New Skill':      '<span class="ba-change" style="color:#2C6E8A">+</span>',
+    'Foundational':    '<span class="ba-change" style="color:#3D5A6B">◆</span>',
     'Unassigned':     '<span class="ba-change" style="color:#ccc">·</span>',
   };
 
@@ -1761,19 +1793,21 @@ function updateSummary() {
   });
 
   // Stats bar counts
-  const counts = { deepens:0, persists:0, drop:0, dropped:0, new:0, unassigned:0 };
+  const counts = { deepens:0, persists:0, foundational:0, drop:0, dropped:0, new:0, unassigned:0 };
   for (const s of allEntries) {
     const f = skillFate(s.name, s.gap).label;
     if (f === 'Deepens') counts.deepens++;
     else if (f === 'Persists') counts.persists++;
+    else if (f === 'Foundational') counts.foundational++;
     else if (f === 'Potential Drop') counts.drop++;
     else if (f === 'Dropped') counts.dropped++;
     else if (f === 'New Skill') counts.new++;
     else counts.unassigned++;
   }
   let statsHtml = '';
-  if (counts.deepens)    statsHtml += `<span class="ba-stat deepens">↑ ${counts.deepens} Deepening</span>`;
-  if (counts.persists)   statsHtml += `<span class="ba-stat persists">→ ${counts.persists} Persisting</span>`;
+  if (counts.deepens)        statsHtml += `<span class="ba-stat deepens">↑ ${counts.deepens} Deepening</span>`;
+  if (counts.foundational)   statsHtml += `<span class="ba-stat foundational">◆ ${counts.foundational} Foundational</span>`;
+  if (counts.persists)       statsHtml += `<span class="ba-stat persists">→ ${counts.persists} Persisting</span>`;
   if (counts.drop)       statsHtml += `<span class="ba-stat drop">↓ ${counts.drop} At Risk</span>`;
   if (counts.dropped)    statsHtml += `<span class="ba-stat dropped">✕ ${counts.dropped} Dropped</span>`;
   if (counts.new)        statsHtml += `<span class="ba-stat new">+ ${counts.new} New</span>`;
@@ -1840,6 +1874,7 @@ function downloadReport() {
     'Potential Drop': { color:'#9B7200', takeaway:'At risk of automation — confirm whether meaningful human judgment is still required once AI handles this work.' },
     'Dropped':        { color:'#7B2020', takeaway:'Confirmed automatable — consider redirecting development investment to skills that deepen or persist.' },
     'New Skill':      { color:'#2C6E8A', takeaway:'Identified as a gap — this skill needs to be built or acquired to support the team\'s AI-augmented workflow.' },
+    'Foundational':   { color:'#3D5A6B', takeaway:'Cross-cutting — applies across all task clusters. Prioritize for development regardless of AI adoption; these skills enable everything else.' },
     'Unassigned':     { color:'#aaa',    takeaway:'Not yet placed in the skill sort exercise — revisit this skill.' },
   };
   const CAT_ORDER_R = ['Foundational & Leadership Skills','Core Role-Specific Skills','Baseline Applied Skills'];
@@ -2026,7 +2061,7 @@ function movePill(skillName, targetCid, targetZone) {
   APP.placements[skillName] = targetCid;
 
   // Update confirm checkbox visibility based on target bucket
-  const bucket = targetCid === 'pool' ? null : (APP.results[targetCid] || 'auto');
+  const bucket = (targetCid === 'pool' || targetCid === 'transversal') ? null : (APP.results[targetCid] || 'auto');
   const needsConfirm = bucket === 'hotl' || bucket === 'auto';
   const existingConfirm = pill.querySelector('.pill-drop-confirm');
   if (needsConfirm && !existingConfirm) {
