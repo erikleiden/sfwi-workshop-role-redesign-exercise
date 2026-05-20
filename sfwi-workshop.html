@@ -58,6 +58,14 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#EDECEA;min-heigh
 .cluster-card{background:#fff;border-radius:10px;padding:18px 20px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.07)}
 .cluster-card h2{font-size:18px;font-weight:700;color:#1A2A4A;margin-bottom:4px}
 .cluster-card p{font-size:13px;color:#666}
+.tasks-toggle{background:none;border:none;color:#1A2A4A;font-size:12px;font-weight:600;cursor:pointer;padding:8px 0 2px;display:flex;align-items:center;gap:5px;opacity:.7;letter-spacing:.01em}
+.tasks-toggle:hover{opacity:1}
+.tasks-toggle .tasks-arrow{display:inline-block;transition:transform .15s;font-size:9px;margin-top:1px}
+.tasks-toggle.open .tasks-arrow{transform:rotate(90deg)}
+.tasks-list{margin:6px 0 0 0;padding:0;list-style:none;border-top:1px solid #EBEBE7;display:none}
+.tasks-list li{font-size:11.5px;color:#555;padding:5px 0 5px 14px;border-bottom:1px solid #F4F4F0;line-height:1.4;position:relative}
+.tasks-list li::before{content:'·';position:absolute;left:4px;color:#bbb}
+.tasks-list li:last-child{border-bottom:none}
 .questions-wrap{background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.07);overflow:hidden;margin-bottom:12px}
 .dir-bar{display:grid;grid-template-columns:200px 1fr;background:#f5f4f2;border-bottom:1px solid #e0dedd}
 .dir-bar .dir-spacer{border-right:1px solid #e0dedd}
@@ -264,12 +272,12 @@ const WORKSHOP_ROLES = {
   "Human Resources Specialists": {
     icon: "🧑‍🤝‍🧑", workers: "~900K workers", cat: "tech",
     clusters: [
-      { id: "hr-sourcing", label: "Sourcing & Candidate Search", description: "Finding, attracting, and initially screening job candidates through various channels." },
-      { id: "hr-evaluation", label: "Candidate Evaluation & Selection", description: "Interviewing, testing, reviewing qualifications, and making hiring decisions." },
-      { id: "hr-communication", label: "Applicant Communication & Onboarding", description: "Informing applicants, updating status, processing hires, and conducting orientations." },
-      { id: "hr-employee-relations", label: "Employee Relations & Workplace Issues", description: "Addressing employee concerns, handling complaints, and managing separations." },
-      { id: "hr-policy-compliance", label: "Policy, Compliance & Management Advisory", description: "Developing HR policies, maintaining legal knowledge, and advising management." },
-      { id: "hr-records-admin", label: "HR Data, Records & Benefits", description: "Maintaining employment records, analyzing HR data, and administering benefits." },
+      { id: "hr-sourcing", label: "Sourcing & Candidate Search", description: "Finding, attracting, and initially screening job candidates through various channels.", tasks: ["Develop or implement recruiting strategies to meet current or anticipated staffing needs", "Perform searches for qualified job candidates using computer databases, networking, Internet recruiting resources, media advertisements, job fairs, or employee referrals", "Review employment applications and job orders to match applicants with job requirements", "Contact job applicants to inform them of the status of their applications"] },
+      { id: "hr-evaluation", label: "Candidate Evaluation & Selection", description: "Interviewing, testing, reviewing qualifications, and making hiring decisions.", tasks: ["Interview job applicants to obtain information on work history, training, education, or job skills", "Select qualified job applicants or refer them to managers, making hiring recommendations when appropriate", "Conduct reference or background checks on job applicants", "Schedule or administer skill, intelligence, psychological, or drug tests for current or prospective employees"] },
+      { id: "hr-communication", label: "Applicant Communication & Onboarding", description: "Informing applicants, updating status, processing hires, and conducting orientations.", tasks: ["Inform job applicants of details such as duties and responsibilities, compensation, benefits, schedules, and working conditions", "Hire employees and process hiring-related paperwork", "Schedule or conduct new employee orientations", "Coordinate with outside staffing agencies to secure temporary employees based on departmental needs"] },
+      { id: "hr-employee-relations", label: "Employee Relations & Workplace Issues", description: "Addressing employee concerns, handling complaints, and managing separations.", tasks: ["Address employee relations issues such as harassment allegations, work complaints, or other employee concerns", "Conduct exit interviews and ensure that necessary employment termination paperwork is completed", "Provide management with information or training related to interviewing, performance appraisals, or counseling techniques"] },
+      { id: "hr-policy-compliance", label: "Policy, Compliance & Management Advisory", description: "Developing HR policies, maintaining legal knowledge, and advising management.", tasks: ["Confer with management to develop or implement personnel policies or procedures", "Interpret and explain human resources policies, procedures, laws, standards, or regulations", "Maintain current knowledge of Equal Employment Opportunity and affirmative action guidelines and laws", "Advise management on organizing, preparing, or implementing recruiting or retention programs"] },
+      { id: "hr-records-admin", label: "HR Data, Records & Benefits", description: "Maintaining employment records, analyzing HR data, and administering benefits.", tasks: ["Analyze employment-related data and prepare required reports", "Prepare or maintain employment records related to events such as hiring, termination, leaves, or promotions using HR system software", "Maintain and update human resources documents such as organizational charts, employee handbooks, or performance evaluation forms", "Administer employee benefit plans"] },
     ],
     skills: [
       { name: "Communication", cat: "Foundational & Leadership Skills" },
@@ -296,11 +304,11 @@ const WORKSHOP_ROLES = {
   "Software Developers": {
     icon: "👨‍💻", workers: "~4.4M workers", cat: "tech",
     clusters: [
-      { id: "sd-requirements", label: "Requirements & Analysis", description: "Gathering user needs, analyzing feasibility, and defining system requirements." },
-      { id: "sd-design", label: "Design & Development", description: "Designing, coding, and modifying software systems using engineering principles." },
-      { id: "sd-testing", label: "Testing & Quality Assurance", description: "Developing and directing software testing, validation, and monitoring procedures." },
-      { id: "sd-collaboration", label: "Collaboration & Communication", description: "Conferring with stakeholders, preparing reports, and coordinating across teams." },
-      { id: "sd-leadership", label: "Supervision & Training", description: "Supervising technical personnel and training end users." },
+      { id: "sd-requirements", label: "Requirements & Analysis", description: "Gathering user needs, analyzing feasibility, and defining system requirements.", tasks: ["Analyze user needs and software requirements to determine feasibility of design within time and cost constraints", "Analyze information to determine, recommend, and plan installation of a new system or modification of an existing system", "Obtain and evaluate information on reporting formats required, costs, or security needs to determine hardware configuration", "Confer with systems analysts, engineers, and programmers to design systems and obtain information on project limitations and capabilities"] },
+      { id: "sd-design", label: "Design & Development", description: "Designing, coding, and modifying software systems using engineering principles.", tasks: ["Design, develop, and modify software systems using scientific analysis and mathematical models to predict and measure outcomes of design", "Modify existing software to correct errors, adapt it to new hardware, or upgrade interfaces and improve performance", "Store, retrieve, and manipulate data for analysis of system capabilities and requirements"] },
+      { id: "sd-testing", label: "Testing & Quality Assurance", description: "Developing and directing software testing, validation, and monitoring procedures.", tasks: ["Develop or direct software system testing or validation procedures, programming, or documentation", "Monitor functioning of equipment to ensure systems operate in conformance with specifications", "Determine system performance standards", "Coordinate installation of software systems"] },
+      { id: "sd-collaboration", label: "Collaboration & Communication", description: "Conferring with stakeholders, preparing reports, and coordinating across teams.", tasks: ["Consult with customers or other departments on project status, proposals, or technical issues such as software design or maintenance", "Confer with data processing or project managers to obtain information on limitations or capabilities for data processing projects", "Prepare reports or correspondence concerning project specifications, activities, or status"] },
+      { id: "sd-leadership", label: "Supervision & Training", description: "Supervising technical personnel and training end users.", tasks: ["Supervise and assign work to programmers, designers, technologists, technicians, or other engineering personnel", "Train users to use new or modified equipment", "Recommend purchase of equipment to control environmental conditions in areas of system installation"] },
     ],
     skills: [
       { name: "Agile Methodology", cat: "Core Role-Specific Skills" },
@@ -322,10 +330,10 @@ const WORKSHOP_ROLES = {
   "Data Scientists": {
     icon: "📊", workers: "~200K workers", cat: "tech",
     clusters: [
-      { id: "ds-dataprep", label: "Data Preparation & Processing", description: "Cleaning, manipulating, and processing large datasets for analysis." },
-      { id: "ds-modeling", label: "Modeling & Algorithm Development", description: "Building, testing, and refining predictive models and machine learning applications." },
-      { id: "ds-analysis", label: "Business Analysis & Problem Identification", description: "Identifying business problems and determining analytical approaches." },
-      { id: "ds-communication", label: "Communication & Stakeholder Engagement", description: "Presenting findings, creating visualizations, and recommending solutions to stakeholders." },
+      { id: "ds-dataprep", label: "Data Preparation & Processing", description: "Cleaning, manipulating, and processing large datasets for analysis.", tasks: ["Clean and manipulate raw data using statistical software", "Analyze, manipulate, or process large sets of data using statistical software", "Apply feature selection algorithms to models predicting outcomes of interest such as sales, attrition, and healthcare use", "Write new functions or applications in programming languages to conduct analyses"] },
+      { id: "ds-modeling", label: "Modeling & Algorithm Development", description: "Building, testing, and refining predictive models and machine learning applications.", tasks: ["Test, validate, and reformulate models to ensure accurate prediction of outcomes of interest", "Compare models using statistical performance metrics such as loss functions or proportion of explained variance", "Propose solutions in engineering, the sciences, and other fields using mathematical theories and techniques", "Apply sampling techniques to determine groups to be surveyed"] },
+      { id: "ds-analysis", label: "Business Analysis & Problem Identification", description: "Identifying business problems and determining analytical approaches.", tasks: ["Identify business problems or management objectives that can be addressed through data analysis", "Identify relationships and trends or any factors that could affect the results of research", "Identify solutions to business problems such as budgeting, staffing, and marketing decisions using the results of data analysis", "Read scientific articles and conference papers to identify emerging analytic trends and technologies"] },
+      { id: "ds-communication", label: "Communication & Stakeholder Engagement", description: "Presenting findings, creating visualizations, and recommending solutions to stakeholders.", tasks: ["Deliver oral or written presentations of the results of mathematical modeling and data analysis to management or other end users", "Create graphs, charts, or other visualizations to convey the results of data analysis using specialized software", "Recommend data-driven solutions to key stakeholders", "Design surveys, opinion polls, or other instruments to collect data"] },
     ],
     skills: [
       { name: "Python (Programming Language)", cat: "Core Role-Specific Skills" },
@@ -347,12 +355,12 @@ const WORKSHOP_ROLES = {
   "Cybersecurity Analysts": {
     icon: "🔒", workers: "~170K workers", cat: "tech",
     clusters: [
-      { id: "cyber-planning", label: "Security Planning & Policy", description: "Developing security plans, policies, and procedures to protect information systems." },
-      { id: "cyber-monitoring", label: "Threat Monitoring & Detection", description: "Monitoring systems and reports to detect viruses, breaches, and unauthorized access." },
-      { id: "cyber-implementation", label: "Security Implementation & Maintenance", description: "Implementing encryption, firewalls, and access controls; modifying security configurations." },
-      { id: "cyber-assessment", label: "Risk Assessment & Testing", description: "Performing risk assessments and executing tests to ensure security measures function properly." },
-      { id: "cyber-response", label: "Incident Response & Compliance", description: "Reviewing violations, conferring with users, and enforcing security procedures." },
-      { id: "cyber-training", label: "Security Awareness & Training", description: "Training users and promoting security awareness across the organization." },
+      { id: "cyber-planning", label: "Security Planning & Policy", description: "Developing security plans, policies, and procedures to protect information systems.", tasks: ["Develop plans to safeguard computer files against accidental or unauthorized modification, destruction, or disclosure", "Document computer security and emergency measures policies, procedures, and tests", "Confer with users to discuss issues such as computer data access needs, security violations, and programming changes"] },
+      { id: "cyber-monitoring", label: "Threat Monitoring & Detection", description: "Monitoring systems and reports to detect viruses, breaches, and unauthorized access.", tasks: ["Monitor current reports of computer viruses to determine when to update virus protection systems", "Monitor use of data files and regulate access to safeguard information in computer files"] },
+      { id: "cyber-implementation", label: "Security Implementation & Maintenance", description: "Implementing encryption, firewalls, and access controls; modifying security configurations.", tasks: ["Encrypt data transmissions and erect firewalls to conceal confidential information as it is being transmitted", "Modify computer security files to incorporate new software, correct errors, or change individual access status", "Coordinate implementation of computer system plans with establishment personnel and outside vendors"] },
+      { id: "cyber-assessment", label: "Risk Assessment & Testing", description: "Performing risk assessments and executing tests to ensure security measures function properly.", tasks: ["Perform risk assessments and execute tests of data processing systems to ensure functioning of data processing activities and security measures"] },
+      { id: "cyber-response", label: "Incident Response & Compliance", description: "Reviewing violations, conferring with users, and enforcing security procedures.", tasks: ["Review violations of computer security procedures and discuss procedures with violators to ensure violations are not repeated"] },
+      { id: "cyber-training", label: "Security Awareness & Training", description: "Training users and promoting security awareness across the organization.", tasks: ["Train users and promote security awareness to ensure system security and to improve server and network efficiency"] },
     ],
     skills: [
       { name: "Communication", cat: "Foundational & Leadership Skills" },
@@ -374,11 +382,11 @@ const WORKSHOP_ROLES = {
   "Product Managers": {
     icon: "🧭", workers: "~500K workers", cat: "tech",
     clusters: [
-      { id: "pm-strategy", label: "Marketing Strategy & Planning", description: "Developing marketing strategies, pricing, and sales forecasting." },
-      { id: "pm-research", label: "Market Research & Analysis", description: "Initiating and analyzing market research, surveys, and competitive intelligence." },
-      { id: "pm-coordination", label: "Campaign Coordination & Promotion", description: "Coordinating marketing activities, promotional events, and trade shows." },
-      { id: "pm-product", label: "Product Development & Sustainability", description: "Consulting on product specifications, packaging, and environmental sustainability." },
-      { id: "pm-stakeholders", label: "Stakeholder & Vendor Management", description: "Negotiating contracts, managing distribution, and advising on market factors." },
+      { id: "pm-strategy", label: "Marketing Strategy & Planning", description: "Developing marketing strategies, pricing, and sales forecasting.", tasks: ["Identify, develop, or evaluate marketing strategy based on knowledge of establishment objectives, market characteristics, and cost factors", "Formulate, direct, or coordinate marketing activities or policies to promote products or services", "Develop pricing strategies, balancing firm objectives and customer satisfaction", "Use sales forecasting or strategic planning to ensure the sale and profitability of products, lines, or services"] },
+      { id: "pm-research", label: "Market Research & Analysis", description: "Initiating and analyzing market research, surveys, and competitive intelligence.", tasks: ["Initiate market research studies or analyze their findings", "Conduct economic or commercial surveys to identify potential markets for products or services", "Advise business or other groups on local, national, or international factors affecting the buying or selling of products or services"] },
+      { id: "pm-coordination", label: "Campaign Coordination & Promotion", description: "Coordinating marketing activities, promotional events, and trade shows.", tasks: ["Coordinate or participate in promotional activities or trade shows, working with developers, advertisers, or production managers", "Select products or accessories to be displayed at trade or special production shows", "Compile lists describing product or service offerings"] },
+      { id: "pm-product", label: "Product Development & Sustainability", description: "Consulting on product specifications, packaging, and environmental sustainability.", tasks: ["Recommend modifications to products, packaging, or production processes to improve environmental soundness or sustainability", "Consult with product development personnel on product specifications such as design, color, or packaging", "Develop business cases for environmental marketing strategies", "Integrate environmental information into product or company marketing strategies, policies, or activities"] },
+      { id: "pm-stakeholders", label: "Stakeholder & Vendor Management", description: "Negotiating contracts, managing distribution, and advising on market factors.", tasks: ["Negotiate contracts with vendors or distributors to manage product distribution and establish distribution networks", "Evaluate the financial aspects of product development such as budgets, expenditures, or return-on-investment projections", "Direct the hiring, training, or performance evaluations of marketing or sales staff and oversee their daily activities"] },
     ],
     skills: [
       { name: "Agile Methodology", cat: "Core Role-Specific Skills" },
@@ -409,12 +417,12 @@ const WORKSHOP_ROLES = {
   "Transportation Storage and Distribution Managers": {
     icon: "🏗️", workers: "~165K workers", cat: "ops",
     clusters: [
-      { id: "tsd-operations", label: "Warehouse & Logistics Operations", description: "Supervising receiving, storing, shipping activities, and directing inbound/outbound operations." },
-      { id: "tsd-planning", label: "Logistics Planning & Analysis", description: "Analyzing logistics, routes, and financial impacts to optimize transportation and distribution." },
-      { id: "tsd-compliance", label: "Safety, Compliance & Risk Management", description: "Developing safety programs, monitoring compliance, and managing emergency procedures." },
-      { id: "tsd-inventory", label: "Inventory & Facility Management", description: "Monitoring inventory levels, inspecting facilities, and managing equipment and infrastructure." },
-      { id: "tsd-admin", label: "Administration & Reporting", description: "Managing budgets, maintaining records, and preparing management reports." },
-      { id: "tsd-stakeholders", label: "Stakeholder Coordination", description: "Collaborating with departments, resolving issues, and negotiating with carriers and vendors." },
+      { id: "tsd-operations", label: "Warehouse & Logistics Operations", description: "Supervising receiving, storing, shipping activities, and directing inbound/outbound operations.", tasks: ["Supervise the activities of workers engaged in receiving, storing, testing, and shipping products or materials", "Direct inbound or outbound operations such as transportation or warehouse activities, safety performance, and logistics quality management", "Develop and document standard and emergency operating procedures for receiving, handling, storing, shipping, or salvaging products or materials", "Review invoices, work orders, or demand forecasts to estimate peak performance periods and to issue work assignments"] },
+      { id: "tsd-planning", label: "Logistics Planning & Analysis", description: "Analyzing logistics, routes, and financial impacts to optimize transportation and distribution.", tasks: ["Analyze all aspects of corporate logistics to determine the most cost-effective or efficient means of transporting products or supplies", "Analyze the financial impact of proposed logistics changes such as routing, shipping modes, or product volumes", "Plan or implement energy saving changes to transportation services such as reducing routes or optimizing capacities", "Plan or implement improvements to internal or external systems or processes"] },
+      { id: "tsd-compliance", label: "Safety, Compliance & Risk Management", description: "Developing safety programs, monitoring compliance, and managing emergency procedures.", tasks: ["Plan, develop, or implement warehouse safety and security programs and activities", "Monitor operations to ensure that staff members comply with administrative policies, safety rules, union contracts, and government regulations", "Monitor product import or export processes to ensure compliance with regulatory or legal requirements", "Examine invoices and shipping manifests for conformity to tariff and customs regulations"] },
+      { id: "tsd-inventory", label: "Inventory & Facility Management", description: "Monitoring inventory levels, inspecting facilities, and managing equipment and infrastructure.", tasks: ["Monitor inventory levels of products or materials in warehouses", "Inspect physical conditions of warehouses, vehicle fleets, or equipment and order testing, maintenance, repairs, or replacements", "Establish or monitor specific supply chain-based performance measurement systems"] },
+      { id: "tsd-admin", label: "Administration & Reporting", description: "Managing budgets, maintaining records, and preparing management reports.", tasks: ["Prepare and manage departmental budgets", "Maintain metrics, reports, process documentation, customer service logs, or training or safety records", "Prepare management recommendations such as proposed fee and tariff increases or schedule changes", "Analyze expenditures and other financial information to develop plans, policies, or budgets for increasing profits or improving services"] },
+      { id: "tsd-stakeholders", label: "Stakeholder Coordination", description: "Collaborating with departments, resolving issues, and negotiating with carriers and vendors.", tasks: ["Confer with department heads to coordinate warehouse activities such as production, sales, records control, or purchasing", "Resolve problems concerning transportation, logistics systems, imports or exports, or customer issues", "Negotiate with carriers, warehouse operators, or insurance company representatives for services and preferential rates", "Evaluate contractors or business partners for operational efficiency or safety and environmental performance records"] },
     ],
     skills: [
       { name: "Communication", cat: "Foundational & Leadership Skills" },
@@ -438,10 +446,10 @@ const WORKSHOP_ROLES = {
   "Truck Drivers": {
     icon: "🚛", workers: "~2M workers", cat: "ops",
     clusters: [
-      { id: "td-driving", label: "Vehicle Operation & Navigation", description: "Driving trucks, planning routes, and maneuvering vehicles for loading and unloading." },
-      { id: "td-cargo", label: "Cargo Handling & Securement", description: "Loading, unloading, securing, and inspecting cargo for transport." },
-      { id: "td-inspection", label: "Vehicle Inspection & Maintenance", description: "Inspecting vehicles, performing basic maintenance, and handling roadside repairs." },
-      { id: "td-admin", label: "Documentation & Compliance", description: "Maintaining logs, checking documentation, collecting receipts, and reporting incidents." },
+      { id: "td-driving", label: "Vehicle Operation & Navigation", description: "Driving trucks, planning routes, and maneuvering vehicles for loading and unloading.", tasks: ["Drive trucks with capacities greater than 13 tons to transport and deliver products, livestock, or other materials", "Maneuver trucks into loading or unloading positions, following signals from loading crew", "Plan or adjust routes based on changing conditions using GPS equipment or other navigation devices to minimize fuel consumption", "Drive trucks to weigh stations before and after loading and along routes in compliance with state regulations"] },
+      { id: "td-cargo", label: "Cargo Handling & Securement", description: "Loading, unloading, securing, and inspecting cargo for transport.", tasks: ["Secure cargo for transport using ropes, blocks, chain, binders, or covers", "Load or unload trucks or help others with loading and unloading using special loading equipment", "Inventory and inspect goods to be moved to determine quantities and conditions", "Follow special cargo-related procedures such as checking refrigeration systems for frozen foods"] },
+      { id: "td-inspection", label: "Vehicle Inspection & Maintenance", description: "Inspecting vehicles, performing basic maintenance, and handling roadside repairs.", tasks: ["Check vehicles to ensure that mechanical, safety, and emergency equipment is in good working order", "Perform basic vehicle maintenance tasks such as adding oil, fuel, or radiator fluid, performing minor repairs, or washing trucks", "Perform emergency roadside repairs such as changing tires or installing tire chains", "Check conditions of trailers after contents have been unloaded to ensure there has been no damage"] },
+      { id: "td-admin", label: "Documentation & Compliance", description: "Maintaining logs, checking documentation, collecting receipts, and reporting incidents.", tasks: ["Maintain logs of working hours or of vehicle service or repair status following applicable state and federal regulations", "Read bills of lading to determine assignment details", "Obtain receipts or signatures for delivered goods and collect payment for services when required", "Report vehicle defects, accidents, traffic violations, or damage to the vehicles"] },
     ],
     skills: [
       { name: "Customer Service", cat: "Baseline Applied Skills" },
@@ -463,11 +471,11 @@ const WORKSHOP_ROLES = {
   "Stockers and Order Fillers": {
     icon: "📦", workers: "~3M workers", cat: "ops",
     clusters: [
-      { id: "sof-stocking", label: "Stocking & Shelving", description: "Receiving, unpacking, and stocking merchandise on shelves, racks, and display areas." },
-      { id: "sof-orderfill", label: "Order Fulfillment & Distribution", description: "Picking, packing, and issuing merchandise based on orders and requisitions." },
-      { id: "sof-inventory", label: "Inventory Management & Record-Keeping", description: "Counting stock, tracking inventory, recording data, and managing reorders." },
-      { id: "sof-quality", label: "Quality Control & Maintenance", description: "Inspecting stock for defects, cleaning areas, and maintaining compliance with safety standards." },
-      { id: "sof-customer", label: "Customer Service & Merchandising", description: "Assisting customers, setting up displays, pricing merchandise, and processing transactions." },
+      { id: "sof-stocking", label: "Stocking & Shelving", description: "Receiving, unpacking, and stocking merchandise on shelves, racks, and display areas.", tasks: ["Stock shelves, racks, cases, bins, and tables with new or transferred merchandise", "Receive, unload, open, unpack, or issue sales floor merchandise", "Mark stock items using identification tags, stamps, electric marking tools, or other labeling equipment", "Design and set up advertising signs and displays of merchandise to attract customers and promote sales"] },
+      { id: "sof-orderfill", label: "Order Fulfillment & Distribution", description: "Picking, packing, and issuing merchandise based on orders and requisitions.", tasks: ["Obtain merchandise from bins or shelves", "Read orders to ascertain catalog numbers, sizes, colors, and quantities of merchandise", "Complete order receipts", "Issue or distribute materials, products, parts, and supplies to customers or coworkers based on incoming requisitions"] },
+      { id: "sof-inventory", label: "Inventory Management & Record-Keeping", description: "Counting stock, tracking inventory, recording data, and managing reorders.", tasks: ["Take inventory or examine merchandise to identify items to be reordered or replenished", "Keep records of out-going orders and the use or damage of stock-handling equipment", "Compare merchandise invoices to items actually received to ensure that shipments are correct", "Requisition merchandise from supplier based on available space, merchandise on hand, or customer demand"] },
+      { id: "sof-quality", label: "Quality Control & Maintenance", description: "Inspecting stock for defects, cleaning areas, and maintaining compliance with safety standards.", tasks: ["Examine and inspect stock items for wear or defects, reporting any damage to supervisors", "Clean and maintain supplies, tools, equipment, and storage areas to ensure compliance with safety regulations", "Dispose of damaged or defective items, or return them to vendors"] },
+      { id: "sof-customer", label: "Customer Service & Merchandising", description: "Assisting customers, setting up displays, pricing merchandise, and processing transactions.", tasks: ["Answer customers' questions about merchandise and advise customers on merchandise selection", "Itemize and total customer merchandise selection at checkout counter and accept cash or charge card for purchases", "Transport packages to customers' vehicles", "Stamp, attach, or change price tags on merchandise, referring to price list"] },
     ],
     skills: [
       { name: "Customer Service", cat: "Baseline Applied Skills" },
@@ -493,10 +501,10 @@ const WORKSHOP_ROLES = {
   "Laborers and Material Movers": {
     icon: "🦺", workers: "~5.9M workers", cat: "ops",
     clusters: [
-      { id: "lmm-moving", label: "Material Handling & Transport", description: "Physically moving freight, stock, and materials by hand or with equipment." },
-      { id: "lmm-loading", label: "Loading, Packing & Securing", description: "Sorting, packing, securing, and protecting cargo for storage or shipment." },
-      { id: "lmm-inspection", label: "Inspection & Quality Checks", description: "Inspecting products, verifying conditions, and identifying damage or leaks." },
-      { id: "lmm-records", label: "Documentation & Equipment Care", description: "Recording production data, maintaining equipment, tagging containers, and reading work orders." },
+      { id: "lmm-moving", label: "Material Handling & Transport", description: "Physically moving freight, stock, and materials by hand or with equipment.", tasks: ["Move freight, stock, or other materials to and from storage or production areas, loading docks, delivery vehicles, or containers by hand or using trucks or tractors", "Carry needed tools or supplies from storage or trucks and return them after use", "Attach slings, hooks, or other devices to lift cargo and guide loads", "Adjust controls to guide, position, or move equipment such as cranes or booms"] },
+      { id: "lmm-loading", label: "Loading, Packing & Securing", description: "Sorting, packing, securing, and protecting cargo for storage or shipment.", tasks: ["Sort cargo before loading and unloading", "Pack containers and re-pack damaged containers", "Install protective devices such as bracing, padding, or strapping to prevent shifting or damage to items being transported", "Assemble product containers or crates using hand tools and precut lumber"] },
+      { id: "lmm-inspection", label: "Inspection & Quality Checks", description: "Inspecting products, verifying conditions, and identifying damage or leaks.", tasks: ["Read work orders or receive oral instructions to determine work assignments or material or equipment needs", "Maintain equipment storage areas to ensure that inventory is protected"] },
+      { id: "lmm-records", label: "Documentation & Equipment Care", description: "Recording production data, maintaining equipment, tagging containers, and reading work orders.", tasks: ["Record numbers of units handled or moved using daily production sheets or work tickets", "Attach identifying tags to containers or mark them with identifying information"] },
     ],
     skills: [
       { name: "Warehousing", cat: "Core Role-Specific Skills" },
@@ -519,11 +527,11 @@ const WORKSHOP_ROLES = {
   "Industrial Machinery Mechanics": {
     icon: "⚙️", workers: "~400K workers", cat: "ops",
     clusters: [
-      { id: "imm-diagnosis", label: "Diagnostics & Troubleshooting", description: "Observing, testing, and analyzing machinery to diagnose malfunctions and equipment problems." },
-      { id: "imm-repair", label: "Repair & Fabrication", description: "Disassembling, repairing, replacing, welding, and reassembling machinery components." },
-      { id: "imm-maintenance", label: "Preventive Maintenance", description: "Cleaning, lubricating, adjusting, and verifying equipment operation after service." },
-      { id: "imm-technical", label: "Technical Reference & Programming", description: "Studying blueprints, reading manuals, and programming computer-controlled machinery." },
-      { id: "imm-admin", label: "Documentation & Coordination", description: "Recording repairs, ordering parts, assigning schedules, and demonstrating equipment." },
+      { id: "imm-diagnosis", label: "Diagnostics & Troubleshooting", description: "Observing, testing, and analyzing machinery to diagnose malfunctions and equipment problems.", tasks: ["Observe and test the operation of machinery or equipment to diagnose malfunctions using voltmeters or other testing devices", "Analyze test results, machine error messages, or information obtained from operators to diagnose equipment problems", "Examine parts for defects such as breakage or excessive wear"] },
+      { id: "imm-repair", label: "Repair & Fabrication", description: "Disassembling, repairing, replacing, welding, and reassembling machinery components.", tasks: ["Disassemble machinery or equipment to remove parts and make repairs", "Repair or replace broken or malfunctioning components of machinery or equipment", "Cut and weld metal to repair broken metal parts, fabricate new parts, or assemble new equipment", "Reassemble equipment after completion of inspections, testing, or repairs"] },
+      { id: "imm-maintenance", label: "Preventive Maintenance", description: "Cleaning, lubricating, adjusting, and verifying equipment operation after service.", tasks: ["Clean, lubricate, or adjust parts, equipment, or machinery", "Repair or maintain the operating condition of industrial production or processing machinery or equipment", "Operate newly repaired machinery or equipment to verify the adequacy of repairs"] },
+      { id: "imm-technical", label: "Technical Reference & Programming", description: "Studying blueprints, reading manuals, and programming computer-controlled machinery.", tasks: ["Study blueprints or manufacturers' manuals to determine correct installation or operation of machinery", "Enter codes and instructions to program computer-controlled machinery", "Demonstrate equipment functions and features to machine operators"] },
+      { id: "imm-admin", label: "Documentation & Coordination", description: "Recording repairs, ordering parts, assigning schedules, and demonstrating equipment.", tasks: ["Record repairs and maintenance performed", "Record parts or materials used and order or requisition new parts or materials as necessary", "Assign schedules to work crews"] },
     ],
     skills: [
       { name: "Troubleshooting (Problem Solving)", cat: "Foundational & Leadership Skills" },
@@ -545,11 +553,11 @@ const WORKSHOP_ROLES = {
   "Inspectors Testers and Samplers": {
     icon: "🔬", workers: "~460K workers", cat: "ops",
     clusters: [
-      { id: "its-inspection", label: "Inspection & Measurement", description: "Inspecting, testing, and measuring materials and products for conformance to specifications." },
-      { id: "its-monitoring", label: "Process Monitoring & Adjustment", description: "Monitoring production operations and making adjustments to maintain quality." },
-      { id: "its-sampling", label: "Sampling, Sorting & Grading", description: "Collecting samples, sorting products, and grading items by specifications." },
-      { id: "its-reporting", label: "Data Recording & Reporting", description: "Recording test data, writing reports, computing defect rates, and notifying supervisors." },
-      { id: "its-equipment", label: "Equipment Maintenance & Compliance", description: "Maintaining and calibrating test equipment and ensuring regulatory compliance." },
+      { id: "its-inspection", label: "Inspection & Measurement", description: "Inspecting, testing, and measuring materials and products for conformance to specifications.", tasks: ["Inspect, test, or measure materials, products, installations, or work for conformance to specifications", "Measure dimensions of products to verify conformance to specifications using measuring instruments such as rulers, calipers, gauges, or micrometers", "Compare colors, shapes, textures, or grades of products or materials with color charts or templates to verify conformance to standards", "Read blueprints, data, or manuals to determine specifications, inspection and testing procedures, or measuring instruments required"] },
+      { id: "its-monitoring", label: "Process Monitoring & Adjustment", description: "Monitoring production operations and making adjustments to maintain quality.", tasks: ["Monitor production operations or equipment to ensure conformance to specifications, making necessary process or assembly adjustments", "Monitor machines that automatically measure, sort, or inspect products", "Read dials or meters to verify that equipment is functioning at specified levels", "Notify supervisors or other personnel of production problems"] },
+      { id: "its-sampling", label: "Sampling, Sorting & Grading", description: "Collecting samples, sorting products, and grading items by specifications.", tasks: ["Collect or select samples for testing or for use as models", "Grade, classify, or sort products according to sizes, weights, colors, or other specifications", "Inspect or test raw materials, parts, or products to determine compliance with environmental standards"] },
+      { id: "its-reporting", label: "Data Recording & Reporting", description: "Recording test data, writing reports, computing defect rates, and notifying supervisors.", tasks: ["Record inspection or test data such as weights, temperatures, grades, or moisture content and quantities inspected or graded", "Write test or inspection reports describing results, recommendations, or needed repairs", "Analyze test data making computations as necessary to determine test results", "Recommend necessary corrective actions based on inspection results"] },
+      { id: "its-equipment", label: "Equipment Maintenance & Compliance", description: "Maintaining and calibrating test equipment and ensuring regulatory compliance.", tasks: ["Clean, maintain, calibrate, or repair measuring instruments or test equipment such as dial indicators or height gauges", "Make minor adjustments to equipment such as turning setscrews to calibrate instruments to required tolerances", "Interpret legal requirements, provide safety information, or recommend compliance procedures to contractors, engineers, or property owners"] },
     ],
     skills: [
       { name: "Quality Control", cat: "Core Role-Specific Skills" },
@@ -570,11 +578,11 @@ const WORKSHOP_ROLES = {
   "Assemblers and Fabricators": {
     icon: "🔩", workers: "~3.2M workers", cat: "ops",
     clusters: [
-      { id: "asm-reading", label: "Blueprint Reading & Planning", description: "Interpreting technical documents and planning assembly work." },
-      { id: "asm-assembly", label: "Assembly & Installation", description: "Physically assembling components, wiring, and installing parts." },
-      { id: "asm-quality", label: "Quality Control & Testing", description: "Inspecting, testing, and adjusting assembled products for conformance." },
-      { id: "asm-docs", label: "Documentation & Tracking", description: "Maintaining production records, inventory tags, and waste reports." },
-      { id: "asm-support", label: "Support & Knowledge Transfer", description: "Cleaning, distributing materials, and training others." },
+      { id: "asm-reading", label: "Blueprint Reading & Planning", description: "Interpreting technical documents and planning assembly work.", tasks: ["Read and interpret assembly blueprints or specifications manuals and plan assembly or building operations", "Verify conformance of parts to stock lists or blueprints using measuring instruments such as calipers, gauges, or micrometers"] },
+      { id: "asm-assembly", label: "Assembly & Installation", description: "Physically assembling components, wiring, and installing parts.", tasks: ["Position or align components for assembly manually or using hoists", "Fasten or install piping, fixtures, or wiring and electrical components to form assemblies using hand tools, rivet guns, or welding equipment", "Assemble systems of gears by aligning and meshing gears in gearboxes", "Set up and operate metalworking machines such as milling or grinding machines to shape or fabricate parts"] },
+      { id: "asm-quality", label: "Quality Control & Testing", description: "Inspecting, testing, and adjusting assembled products for conformance.", tasks: ["Inspect, operate, and test completed products to verify functioning, machine capabilities, or conformance to customer specifications", "Set and verify parts clearances", "Remove rough spots and smooth surfaces to fit, trim, or clean parts using hand tools or power tools"] },
+      { id: "asm-docs", label: "Documentation & Tracking", description: "Maintaining production records, inventory tags, and waste reports.", tasks: ["Rework, repair, or replace damaged parts or assemblies", "Lay out and drill, ream, tap, or cut parts for assembly"] },
+      { id: "asm-support", label: "Support & Knowledge Transfer", description: "Cleaning, distributing materials, and training others.", tasks: ["Maintain and lubricate parts or components"] },
     ],
     skills: [
       { name: "Lifting Ability", cat: "Baseline Applied Skills" },
@@ -598,10 +606,10 @@ const WORKSHOP_ROLES = {
   "Packers and Packagers": {
     icon: "📦", workers: "~700K workers", cat: "ops",
     clusters: [
-      { id: "pack-inspect", label: "Quality Inspection & Measurement", description: "Examining products and containers for quality and specification compliance." },
-      { id: "pack-packing", label: "Packing & Sealing", description: "Placing products into containers and sealing them for shipment." },
-      { id: "pack-label", label: "Labeling & Documentation", description: "Marking containers and recording order information." },
-      { id: "pack-material", label: "Material Handling & Transport", description: "Moving, sorting, and transporting products and materials." },
+      { id: "pack-inspect", label: "Quality Inspection & Measurement", description: "Examining products and containers for quality and specification compliance.", tasks: ["Examine and inspect containers, materials, or products to ensure that product quality and packing specifications are met", "Measure, weigh, and count products and materials"] },
+      { id: "pack-packing", label: "Packing & Sealing", description: "Placing products into containers and sealing them for shipment.", tasks: ["Place or pour products or materials into containers using hand tools and equipment or fill containers from spouts or chutes", "Seal containers or materials using glues, fasteners, nails, and hand tools", "Assemble, line, and pad cartons, crates, and containers using hand tools", "Load materials and products into package processing equipment"] },
+      { id: "pack-label", label: "Labeling & Documentation", description: "Marking containers and recording order information.", tasks: ["Mark and label containers, container tags, or products using marking tools", "Record product, packaging, and order information on specified forms and records"] },
+      { id: "pack-material", label: "Material Handling & Transport", description: "Moving, sorting, and transporting products and materials.", tasks: ["Obtain, move, and sort products, materials, containers, and orders using hand tools", "Remove completed or defective products or materials, placing them on moving equipment such as conveyors or in specified areas such as loading docks", "Transport packages to customers' vehicles", "Clean containers, materials, supplies, or work areas using cleaning solutions and hand tools"] },
     ],
     skills: [
       { name: "Warehousing", cat: "Core Role-Specific Skills" },
@@ -621,11 +629,11 @@ const WORKSHOP_ROLES = {
   "Maintenance and Repair Workers": {
     icon: "🔧", workers: "~1.5M workers", cat: "ops",
     clusters: [
-      { id: "maint-diag", label: "Diagnostics & Inspection", description: "Inspecting, testing, and diagnosing equipment malfunctions." },
-      { id: "maint-repair", label: "Repair & Fabrication", description: "Repairing machines, structures, and fabricating replacement parts." },
-      { id: "maint-prevent", label: "Preventive Maintenance", description: "Routine maintenance, cleaning, and lubrication of equipment." },
-      { id: "maint-facility", label: "Facility & Grounds", description: "Building maintenance, painting, roofing, groundskeeping, and cleaning." },
-      { id: "maint-planning", label: "Planning & Administration", description: "Estimating costs, ordering parts, recording work, and training staff." },
+      { id: "maint-diag", label: "Diagnostics & Inspection", description: "Inspecting, testing, and diagnosing equipment malfunctions.", tasks: ["Inspect, operate, or test machinery or equipment to diagnose machine malfunctions", "Diagnose mechanical problems and determine how to correct them, checking blueprints, repair manuals, or parts catalogs as necessary", "Estimate costs to repair machinery, equipment, or building structures"] },
+      { id: "maint-repair", label: "Repair & Fabrication", description: "Repairing machines, structures, and fabricating replacement parts.", tasks: ["Repair machines, equipment, or structures using tools such as hammers, hoists, saws, drills, or wrenches", "Dismantle machines, equipment, or devices to access and remove defective parts using hoists, cranes, hand tools, or power tools", "Assemble, install, or repair wiring, electrical or electronic components, pipe systems, plumbing, machinery, or equipment", "Operate cutting torches or welding equipment to cut or join metal parts"] },
+      { id: "maint-prevent", label: "Preventive Maintenance", description: "Routine maintenance, cleaning, and lubrication of equipment.", tasks: ["Perform routine maintenance such as inspecting drives, motors, or belts, checking fluid levels, or replacing filters", "Clean or lubricate shafts, bearings, gears, or other parts of machinery", "Align and balance new equipment after installation"] },
+      { id: "maint-facility", label: "Facility & Grounds", description: "Building maintenance, painting, roofing, groundskeeping, and cleaning.", tasks: ["Paint or repair roofs, windows, doors, floors, woodwork, plaster, drywall, or other parts of building structures", "Perform general cleaning of buildings or properties", "Provide groundskeeping services such as landscaping or snow removal"] },
+      { id: "maint-planning", label: "Planning & Administration", description: "Estimating costs, ordering parts, recording work, and training staff.", tasks: ["Plan and lay out repair work using diagrams, drawings, blueprints, maintenance manuals, or schematic diagrams", "Order parts, supplies, or equipment from catalogs or suppliers", "Record type and cost of maintenance or repair work", "Train or manage maintenance personnel or subcontractors"] },
     ],
     skills: [
       { name: "Communication", cat: "Foundational & Leadership Skills" },
@@ -644,11 +652,11 @@ const WORKSHOP_ROLES = {
   "Transportation Supervisors": {
     icon: "🚚", workers: "~100K workers", cat: "ops",
     clusters: [
-      { id: "tsup-safety", label: "Safety & Compliance", description: "Monitoring safety procedures, inspecting equipment, and enforcing rules." },
-      { id: "tsup-supervise", label: "Staff Supervision & Development", description: "Directing workers, resolving problems, and managing performance." },
-      { id: "tsup-scheduling", label: "Scheduling & Logistics", description: "Planning work schedules, shipping times, and staffing requirements." },
-      { id: "tsup-hr", label: "Hiring & Training", description: "Recruiting, evaluating, and training employees." },
-      { id: "tsup-admin", label: "Records & Administration", description: "Maintaining records, reporting, budgeting, and inventory." },
+      { id: "tsup-safety", label: "Safety & Compliance", description: "Monitoring safety procedures, inspecting equipment, and enforcing rules.", tasks: ["Enforce safety rules and regulations", "Inspect or test materials, stock, vehicles, equipment, or facilities to ensure that they are safe, free of defects, and consistent with specifications", "Interpret transportation or tariff regulations, shipping orders, safety regulations, or company policies and procedures for workers"] },
+      { id: "tsup-supervise", label: "Staff Supervision & Development", description: "Directing workers, resolving problems, and managing performance.", tasks: ["Direct workers in transportation or related services such as pumping, moving, storing, or loading or unloading of materials", "Resolve worker problems or collaborate with employees to assist in problem resolution", "Recommend and implement measures to improve worker motivation, equipment performance, work methods, or customer services", "Monitor field work to ensure proper performance and use of materials"] },
+      { id: "tsup-scheduling", label: "Scheduling & Logistics", description: "Planning work schedules, shipping times, and staffing requirements.", tasks: ["Plan and establish schedules", "Plan work assignments and equipment allocations to meet transportation, operations, or production goals", "Review orders, production schedules, blueprints, or shipping or receiving notices to determine work sequences and material shipping dates, types, volumes, or destinations"] },
+      { id: "tsup-hr", label: "Hiring & Training", description: "Recruiting, evaluating, and training employees.", tasks: ["Explain and demonstrate work tasks to new workers or assign training tasks to experienced workers", "Recommend or implement personnel actions such as employee selection, evaluation, rewards, or disciplinary actions"] },
+      { id: "tsup-admin", label: "Records & Administration", description: "Maintaining records, reporting, budgeting, and inventory.", tasks: ["Maintain or verify records of time, materials, expenditures, or crew activities", "Prepare, compile, and submit reports on work activities, operations, production, or work-related accidents", "Compute or estimate cash, payroll, transportation, personnel, or storage requirements", "Requisition needed personnel, supplies, equipment, parts, or repair services"] },
     ],
     skills: [
       { name: "Communication", cat: "Foundational & Leadership Skills" },
@@ -670,11 +678,11 @@ const WORKSHOP_ROLES = {
   "Shipping & Receiving Clerks": {
     icon: "📬", workers: "~700K workers", cat: "ops",
     clusters: [
-      { id: "ship-verify", label: "Verification & Inspection", description: "Examining shipments and comparing with records for accuracy." },
-      { id: "ship-docs", label: "Documentation & Record-Keeping", description: "Preparing shipping documents and recording shipment data." },
-      { id: "ship-logistics", label: "Shipping Logistics", description: "Determining shipping methods, contacting carriers, and routing." },
-      { id: "ship-physical", label: "Physical Handling & Packing", description: "Packing, labeling, and delivering materials within the facility." },
-      { id: "ship-inventory", label: "Inventory Management", description: "Requisitioning and storing shipping materials and supplies." },
+      { id: "ship-verify", label: "Verification & Inspection", description: "Examining shipments and comparing with records for accuracy.", tasks: ["Examine shipment contents and compare with records such as manifests, invoices, or orders to verify accuracy", "Confer or correspond with establishment representatives to rectify problems such as damages, shortages, or nonconformance to specifications"] },
+      { id: "ship-docs", label: "Documentation & Record-Keeping", description: "Preparing shipping documents and recording shipment data.", tasks: ["Prepare documents such as work orders, bills of lading, or shipping orders to route materials", "Record shipment data such as weight, charges, space availability, damages, or discrepancies for reporting, accounting, or recordkeeping purposes", "Compute amounts such as space available, shipping, storage, or demurrage charges using computer or price list"] },
+      { id: "ship-logistics", label: "Shipping Logistics", description: "Determining shipping methods, contacting carriers, and routing.", tasks: ["Determine shipping methods, routes, or rates for materials to be shipped", "Contact carrier representatives to make arrangements or to issue instructions for shipping and delivery of materials", "Compare shipping routes or methods to determine which have the least environmental impact"] },
+      { id: "ship-physical", label: "Physical Handling & Packing", description: "Packing, labeling, and delivering materials within the facility.", tasks: ["Pack, seal, label, or affix postage to prepare materials for shipping using hand tools, power tools, or postage meter", "Deliver or route materials to departments using handtruck, conveyor, or sorting bins"] },
+      { id: "ship-inventory", label: "Inventory Management", description: "Requisitioning and storing shipping materials and supplies.", tasks: ["Requisition and store shipping materials and supplies to maintain inventory of stock"] },
     ],
     skills: [
       { name: "Communication", cat: "Foundational & Leadership Skills" },
@@ -702,11 +710,11 @@ const WORKSHOP_ROLES = {
   "Customer Service Representatives": {
     icon: "🎧", workers: "~2.9M workers", cat: "retail",
     clusters: [
-      { id: "csr-inquiry", label: "Customer Inquiry & Communication", description: "Interacting with customers to provide information and take orders." },
-      { id: "csr-resolve", label: "Complaint Resolution", description: "Investigating and resolving customer complaints and billing issues." },
-      { id: "csr-records", label: "Record-Keeping & Documentation", description: "Maintaining records of interactions, transactions, and contracts." },
-      { id: "csr-billing", label: "Billing & Payments", description: "Determining charges, collecting payments, and handling merchandise disputes." },
-      { id: "csr-improve", label: "Policy Review & Process Improvement", description: "Reviewing policies and recommending service improvements." },
+      { id: "csr-inquiry", label: "Customer Inquiry & Communication", description: "Interacting with customers to provide information and take orders.", tasks: ["Confer with customers by telephone or in person to provide information about products or services, take or enter orders, cancel accounts, or obtain details of complaints", "Contact customers to respond to inquiries or to notify them of claim investigation results or any planned adjustments", "Obtain and examine all relevant information to assess validity of complaints and to determine possible causes such as extreme weather conditions that could increase utility bills"] },
+      { id: "csr-resolve", label: "Complaint Resolution", description: "Investigating and resolving customer complaints and billing issues.", tasks: ["Resolve customers' service or billing complaints by performing activities such as exchanging merchandise, refunding money, or adjusting bills", "Check to ensure that appropriate changes were made to resolve customers' problems", "Refer unresolved customer grievances to designated departments for further investigation", "Review insurance policy terms to determine whether a particular loss is covered by insurance"] },
+      { id: "csr-records", label: "Record-Keeping & Documentation", description: "Maintaining records of interactions, transactions, and contracts.", tasks: ["Keep records of customer interactions or transactions, recording details of inquiries, complaints, or comments, as well as actions taken", "Complete contract forms, prepare change of address records, or issue service discontinuance orders, using computers"] },
+      { id: "csr-billing", label: "Billing & Payments", description: "Determining charges, collecting payments, and handling merchandise disputes.", tasks: ["Determine charges for services requested, collect deposits or payments, or arrange for billing", "Compare disputed merchandise with original requisitions and information from invoices and prepare invoices for returned goods", "Solicit sales of new or additional services or products"] },
+      { id: "csr-improve", label: "Policy Review & Process Improvement", description: "Reviewing policies and recommending service improvements.", tasks: ["Recommend improvements in products, packaging, shipping, service, or billing methods and procedures to prevent future problems"] },
     ],
     skills: [
       { name: "Billing", cat: "Baseline Applied Skills" },
@@ -729,11 +737,11 @@ const WORKSHOP_ROLES = {
   "Customer Service Managers": {
     icon: "👔", workers: "~400K workers", cat: "retail",
     clusters: [
-      { id: "csm-strategy", label: "Sales Strategy & Direction", description: "Directing sales activities and setting organizational goals." },
-      { id: "csm-people", label: "Staff Management & Development", description: "Supervising, hiring, training, and evaluating sales staff." },
-      { id: "csm-customer", label: "Customer Relations", description: "Resolving customer complaints and advising on products." },
-      { id: "csm-finance", label: "Financial Planning & Analysis", description: "Budgeting, pricing, and analyzing operational performance." },
-      { id: "csm-ops", label: "Operations & Coordination", description: "Coordinating across departments, managing advertising and distribution." },
+      { id: "csm-strategy", label: "Sales Strategy & Direction", description: "Directing sales activities and setting organizational goals.", tasks: ["Implement corporate or departmental policies, procedures, and service standards in conjunction with management", "Develop or update procedures, policies, or standards", "Make recommendations to management concerning staffing decisions or procedural changes"] },
+      { id: "csm-people", label: "Staff Management & Development", description: "Supervising, hiring, training, and evaluating sales staff.", tasks: ["Supervise the work of office, administrative, or customer service employees to ensure adherence to quality standards, deadlines, and proper procedures", "Evaluate employees' job performance and conformance to regulations and recommend appropriate personnel action", "Train or instruct employees in job duties or company policies or arrange for training to be provided", "Discuss job performance problems with employees to identify causes and issues and to work on resolving problems"] },
+      { id: "csm-customer", label: "Customer Relations", description: "Resolving customer complaints and advising on products.", tasks: ["Resolve customer complaints or answer customers' questions regarding policies and procedures", "Provide employees with guidance in handling difficult or complex problems or in resolving escalated complaints or disputes"] },
+      { id: "csm-finance", label: "Financial Planning & Analysis", description: "Budgeting, pricing, and analyzing operational performance.", tasks: ["Analyze financial activities of establishments or departments and provide input into budget planning and preparation processes", "Review records or reports pertaining to activities such as production, payroll, or shipping to verify details and monitor work activities", "Develop work schedules according to budgets and workloads"] },
+      { id: "csm-ops", label: "Operations & Coordination", description: "Coordinating across departments, managing advertising and distribution.", tasks: ["Prepare and issue work schedules, deadlines, and duty assignments for office or administrative staff", "Maintain records pertaining to inventory, personnel, orders, supplies, or machine maintenance", "Research, compile, and prepare reports, manuals, correspondence, or other information required by management or governmental agencies", "Coordinate or perform activities associated with shipping, receiving, distribution, or transportation"] },
     ],
     skills: [
       { name: "Call Center Experience", cat: "Core Role-Specific Skills" },
@@ -755,11 +763,11 @@ const WORKSHOP_ROLES = {
   "Retail Salespersons": {
     icon: "🏷️", workers: "~4.5M workers", cat: "retail",
     clusters: [
-      { id: "ret-customer", label: "Customer Engagement", description: "Greeting customers and understanding their needs." },
-      { id: "ret-transactions", label: "Sales Transactions", description: "Processing payments, returns, and preparing sales documents." },
-      { id: "ret-knowledge", label: "Product Knowledge & Promotions", description: "Staying current on sales, policies, and merchandise information." },
-      { id: "ret-merch", label: "Merchandising & Inventory", description: "Stocking, displaying, and tracking inventory." },
-      { id: "ret-specialty", label: "Specialty Services", description: "Estimating costs, trade-ins, repairs, and rentals." },
+      { id: "ret-customer", label: "Customer Engagement", description: "Greeting customers and understanding their needs.", tasks: ["Greet customers and ascertain what each customer wants or needs", "Recommend, select, and help locate or obtain merchandise based on customer needs and desires", "Describe merchandise and explain use, operation, and care of merchandise to customers", "Answer questions regarding the store and its merchandise"] },
+      { id: "ret-transactions", label: "Sales Transactions", description: "Processing payments, returns, and preparing sales documents.", tasks: ["Compute sales prices, total purchases, and receive and process cash or credit payment", "Open and close cash registers, performing tasks such as counting money, separating charge slips, coupons, and vouchers, and balancing cash drawers", "Prepare sales slips or sales contracts", "Exchange merchandise for customers and accept returns"] },
+      { id: "ret-knowledge", label: "Product Knowledge & Promotions", description: "Staying current on sales, policies, and merchandise information.", tasks: ["Maintain knowledge of current sales and promotions, policies regarding payment and exchanges, and security practices", "Watch for and recognize security risks and thefts and know how to prevent or handle these situations", "Demonstrate use or operation of merchandise", "Place special orders or call other stores to find desired items"] },
+      { id: "ret-merch", label: "Merchandising & Inventory", description: "Stocking, displaying, and tracking inventory.", tasks: ["Ticket, arrange, and display merchandise to promote sales", "Clean shelves, counters, and tables", "Inventory stock and requisition new stock", "Bag or package purchases and wrap gifts"] },
+      { id: "ret-specialty", label: "Specialty Services", description: "Estimating costs, trade-ins, repairs, and rentals.", tasks: ["Estimate and quote trade-in allowances", "Estimate cost of repair or alteration of merchandise", "Rent merchandise to customers", "Sell or arrange for delivery, insurance, financing, or service contracts for merchandise"] },
     ],
     skills: [
       { name: "Bagging Merchandise", cat: "Core Role-Specific Skills" },
@@ -780,11 +788,11 @@ const WORKSHOP_ROLES = {
   "First-Line Supervisors of Retail Sales Workers": {
     icon: "🗂️", workers: "~1.3M workers", cat: "retail",
     clusters: [
-      { id: "rsup-customer", label: "Customer Service & Sales", description: "Assisting customers and ensuring satisfactory service quality." },
-      { id: "rsup-staff", label: "Staff Management", description: "Supervising, scheduling, hiring, and evaluating employees." },
-      { id: "rsup-merch", label: "Merchandising & Pricing", description: "Managing product displays, pricing, and advertising campaigns." },
-      { id: "rsup-inventory", label: "Inventory & Purchasing", description: "Tracking inventory, purchasing stock, and inspecting products." },
-      { id: "rsup-admin", label: "Administration & Finance", description: "Record-keeping, budgeting, reporting, and policy management." },
+      { id: "rsup-customer", label: "Customer Service & Sales", description: "Assisting customers and ensuring satisfactory service quality.", tasks: ["Provide customer service by greeting and assisting customers and responding to customer inquiries and complaints", "Monitor sales activities to ensure that customers receive satisfactory service and quality goods", "Instruct staff on how to handle difficult and complicated sales"] },
+      { id: "rsup-staff", label: "Staff Management", description: "Supervising, scheduling, hiring, and evaluating employees.", tasks: ["Direct and supervise employees engaged in sales, inventory-taking, reconciling cash receipts, or in performing services for customers", "Hire, train, and evaluate personnel in sales or marketing establishments, promoting or firing workers when appropriate", "Assign employees to specific duties", "Plan and prepare work schedules and keep records of employees' work schedules and time cards"] },
+      { id: "rsup-merch", label: "Merchandising & Pricing", description: "Managing product displays, pricing, and advertising campaigns.", tasks: ["Plan and coordinate advertising campaigns and sales promotions and prepare merchandise displays and advertising copy", "Formulate pricing policies for merchandise according to profitability requirements", "Estimate consumer demand and determine the types and amounts of goods to be sold", "Examine merchandise to ensure that it is correctly priced and displayed and that it functions as advertised"] },
+      { id: "rsup-inventory", label: "Inventory & Purchasing", description: "Tracking inventory, purchasing stock, and inspecting products.", tasks: ["Inventory stock and reorder when inventory drops to a specified level", "Examine products purchased for resale or received for storage to assess the condition of each product", "Enforce safety, health, and security rules"] },
+      { id: "rsup-admin", label: "Administration & Finance", description: "Record-keeping, budgeting, reporting, and policy management.", tasks: ["Keep records of purchases, sales, and requisitions", "Review inventory and sales records to prepare reports for management and budget departments", "Plan budgets and authorize payments and merchandise returns", "Confer with company officials to develop methods and procedures to increase sales, expand markets, and promote business"] },
     ],
     skills: [
       { name: "Accountability", cat: "Foundational & Leadership Skills" },
@@ -808,10 +816,10 @@ const WORKSHOP_ROLES = {
   "Cashiers": {
     icon: "💳", workers: "~3.3M workers", cat: "retail",
     clusters: [
-      { id: "cash-trans", label: "Transaction Processing", description: "Receiving payments, making change, and processing returns." },
-      { id: "cash-customer", label: "Customer Interaction", description: "Greeting customers, answering questions, and providing assistance." },
-      { id: "cash-reconcile", label: "Cash Management & Reconciliation", description: "Counting drawers, balancing receipts, and maintaining financial records." },
-      { id: "cash-store", label: "Store Support", description: "Stocking shelves, cleaning, bagging, and assisting other departments." },
+      { id: "cash-trans", label: "Transaction Processing", description: "Receiving payments, making change, and processing returns.", tasks: ["Establish or identify prices of goods, services, or admission and tabulate bills using calculators, cash registers, or optical price scanners", "Receive payment by cash, check, credit cards, vouchers, or automatic debits", "Issue receipts, refunds, credits, or change due to customers", "Process merchandise returns and exchanges"] },
+      { id: "cash-customer", label: "Customer Interaction", description: "Greeting customers, answering questions, and providing assistance.", tasks: ["Greet customers entering establishments", "Assist customers by providing information and resolving their complaints", "Answer customers' questions and provide information on procedures or policies", "Help customers find the location of products"] },
+      { id: "cash-reconcile", label: "Cash Management & Reconciliation", description: "Counting drawers, balancing receipts, and maintaining financial records.", tasks: ["Count money in cash drawers at the beginning of shifts to ensure that amounts are correct and that there is adequate change", "Calculate total payments received during a time period and reconcile this with total sales", "Sort, count, and wrap currency and coins", "Keep periodic balance sheets of amounts and numbers of transactions"] },
+      { id: "cash-store", label: "Store Support", description: "Stocking shelves, cleaning, bagging, and assisting other departments.", tasks: ["Maintain clean and orderly checkout areas and complete other general cleaning duties such as mopping floors and emptying trash cans", "Assist with duties in other areas of the store such as monitoring fitting rooms or bagging and carrying out customers' items", "Stock shelves, sort and reshelve returned items, and mark prices on items and shelves"] },
     ],
     skills: [
       { name: "Customer Service", cat: "Baseline Applied Skills" },
@@ -831,10 +839,10 @@ const WORKSHOP_ROLES = {
   "Receptionists and Information Clerks": {
     icon: "🪟", workers: "~1M workers", cat: "retail",
     clusters: [
-      { id: "rec-frontdesk", label: "Front Desk & Visitor Management", description: "Greeting visitors, answering phones, and directing people to appropriate contacts." },
-      { id: "rec-information", label: "Information & Referral Services", description: "Providing information to callers and visitors, and referring to appropriate departments." },
-      { id: "rec-admin", label: "Administrative Support", description: "Processing mail, filing, typing, and maintaining office supplies." },
-      { id: "rec-security", label: "Access Control & Security", description: "Issuing visitor passes, maintaining security logs, and monitoring building access." },
+      { id: "rec-frontdesk", label: "Front Desk & Visitor Management", description: "Greeting visitors, answering phones, and directing people to appropriate contacts.", tasks: ["Greet persons entering establishment, determine nature and purpose of visit, and direct or escort them to specific destinations", "Operate telephone switchboard to answer, screen, or forward calls, providing information, taking messages, or scheduling appointments", "Keep a current record of staff members' whereabouts and availability"] },
+      { id: "rec-information", label: "Information & Referral Services", description: "Providing information to callers and visitors, and referring to appropriate departments.", tasks: ["Provide information about establishment such as location of departments or offices, employees within the organization, or services provided", "Hear and resolve complaints from customers or the public", "Analyze data to determine answers to questions from customers or members of the public", "Calculate and quote rates for tours, stocks, insurance policies, or other products or services"] },
+      { id: "rec-admin", label: "Administrative Support", description: "Processing mail, filing, typing, and maintaining office supplies.", tasks: ["Perform administrative support tasks such as proofreading, transcribing handwritten information, or operating calculators or computers to work with pay records, invoices, or balance sheets", "File and maintain records", "Process and prepare memos, correspondence, travel vouchers, or other documents", "Collect, sort, distribute, or prepare mail, messages, or courier deliveries"] },
+      { id: "rec-security", label: "Access Control & Security", description: "Issuing visitor passes, maintaining security logs, and monitoring building access.", tasks: ["Schedule appointments and maintain and update appointment calendars", "Schedule space or equipment for special programs and prepare lists of participants", "Enroll individuals to participate in programs and notify them of their acceptance"] },
     ],
     skills: [
       { name: "Customer Service", cat: "Core Role-Specific Skills" },
@@ -852,10 +860,10 @@ const WORKSHOP_ROLES = {
   "Security Guards": {
     icon: "🛡️", workers: "~1.1M workers", cat: "retail",
     clusters: [
-      { id: "sec-monitoring", label: "Monitoring & Surveillance", description: "Patrolling, watching video monitors, and detecting suspicious activity." },
-      { id: "sec-access", label: "Access Control & Verification", description: "Checking credentials, issuing passes, and verifying identities." },
-      { id: "sec-response", label: "Incident Response & Assistance", description: "Responding to emergencies, directing traffic, and assisting persons in distress." },
-      { id: "sec-reporting", label: "Reporting & Documentation", description: "Writing incident reports, maintaining logs, and recording security activities." },
+      { id: "sec-monitoring", label: "Monitoring & Surveillance", description: "Patrolling, watching video monitors, and detecting suspicious activity.", tasks: ["Patrol industrial or commercial premises to prevent and detect signs of intrusion and ensure security of doors, windows, and gates", "Circulate among visitors, patrons, or employees to preserve order and protect property", "Monitor and adjust controls that regulate building systems such as air conditioning, furnace, or boiler"] },
+      { id: "sec-access", label: "Access Control & Verification", description: "Checking credentials, issuing passes, and verifying identities.", tasks: ["Monitor and authorize entrance and departure of employees, visitors, and other persons to guard against theft and maintain security of premises", "Operate detecting devices to screen individuals and prevent passage of prohibited articles into restricted areas", "Lock doors and gates of entrances and exits to secure buildings"] },
+      { id: "sec-response", label: "Incident Response & Assistance", description: "Responding to emergencies, directing traffic, and assisting persons in distress.", tasks: ["Answer alarms and investigate disturbances", "Respond to medical emergencies by administering basic first aid or by obtaining assistance from paramedics", "Call police or fire departments in cases of emergency such as fire or presence of unauthorized persons", "Warn persons of rule infractions or violations and apprehend or evict violators from premises using force when necessary"] },
+      { id: "sec-reporting", label: "Reporting & Documentation", description: "Writing incident reports, maintaining logs, and recording security activities.", tasks: ["Write reports of daily activities and irregularities such as equipment or property damage, theft, presence of unauthorized persons, or unusual occurrences", "Answer telephone calls to take messages, answer questions, and provide information during non-business hours or when switchboard is closed"] },
     ],
     skills: [
       { name: "Customer Service", cat: "Baseline Applied Skills" },
@@ -877,10 +885,10 @@ const WORKSHOP_ROLES = {
   "Financial Analysts": {
     icon: "📉", workers: "~330K workers", cat: "biz",
     clusters: [
-      { id: "fin-research", label: "Financial Research & Data Analysis", description: "Gathering financial data, studying economic trends, and analyzing company performance." },
-      { id: "fin-modeling", label: "Modeling & Forecasting", description: "Building financial models, projecting earnings, and preparing valuation analyses." },
-      { id: "fin-reporting", label: "Reporting & Communication", description: "Preparing reports, presentations, and briefing clients or management." },
-      { id: "fin-compliance", label: "Regulatory & Compliance Activities", description: "Assessing investment risk, maintaining legal compliance, and financial record review." },
+      { id: "fin-research", label: "Financial Research & Data Analysis", description: "Gathering financial data, studying economic trends, and analyzing company performance.", tasks: ["Monitor fundamental economic, industrial, and corporate developments by analyzing information from financial publications, investment banking firms, government agencies, trade publications, or personal interviews", "Interpret data on price, yield, stability, future investment-risk trends, economic influences, and other factors affecting investment programs", "Analyze financial or operational performance of companies facing financial difficulties to identify or recommend remedies"] },
+      { id: "fin-modeling", label: "Modeling & Forecasting", description: "Building financial models, projecting earnings, and preparing valuation analyses.", tasks: ["Employ financial models to develop solutions to financial problems or to assess the financial or capital impact of transactions", "Evaluate and compare the relative quality of various securities in a given industry", "Evaluate capital needs of clients and assess market conditions to inform structuring of financial packages", "Determine the prices at which securities should be syndicated and offered to the public"] },
+      { id: "fin-reporting", label: "Reporting & Communication", description: "Preparing reports, presentations, and briefing clients or management.", tasks: ["Present oral or written reports on general economic trends, individual corporations, and entire industries", "Create client presentations of plan details", "Draw charts and graphs using computer spreadsheets to illustrate technical reports", "Prepare all materials for transactions or execution of deals"] },
+      { id: "fin-compliance", label: "Regulatory & Compliance Activities", description: "Assessing investment risk, maintaining legal compliance, and financial record review.", tasks: ["Inform investment decisions by analyzing financial information to forecast business, industry, or economic conditions", "Recommend investments and investment timing to companies, investment firm staff, or the public", "Purchase investments for companies in accordance with company policy", "Conduct financial analyses related to investments in green construction or green retrofitting projects"] },
     ],
     skills: [
       { name: "Accounting", cat: "Core Role-Specific Skills" },
@@ -905,10 +913,10 @@ const WORKSHOP_ROLES = {
   "Financial Managers": {
     icon: "🏦", workers: "~700K workers", cat: "biz",
     clusters: [
-      { id: "finmgr-planning", label: "Financial Planning & Budgeting", description: "Developing financial plans, budgets, and long-range forecasts." },
-      { id: "finmgr-reporting", label: "Financial Reporting & Compliance", description: "Preparing financial reports, ensuring regulatory compliance, and overseeing audits." },
-      { id: "finmgr-leadership", label: "Leadership & Coordination", description: "Directing staff, coordinating with executives, and advising management." },
-      { id: "finmgr-investment", label: "Investment & Capital Management", description: "Managing investments, credit activities, and capital expenditure decisions." },
+      { id: "finmgr-planning", label: "Financial Planning & Budgeting", description: "Developing financial plans, budgets, and long-range forecasts.", tasks: ["Evaluate data pertaining to costs to plan budgets", "Develop or analyze information to assess the current or future financial status of firms", "Evaluate financial reporting systems, accounting or collection procedures, or investment activities and make recommendations for changes to procedures, operating systems, or budgets"] },
+      { id: "finmgr-reporting", label: "Financial Reporting & Compliance", description: "Preparing financial reports, ensuring regulatory compliance, and overseeing audits.", tasks: ["Prepare financial or regulatory reports required by laws, regulations, or boards of directors", "Prepare operational or risk reports for management analysis", "Review collection reports to determine the status of collections and the amounts of outstanding balances", "Review reports of securities transactions or price lists to analyze market conditions"] },
+      { id: "finmgr-leadership", label: "Leadership & Coordination", description: "Directing staff, coordinating with executives, and advising management.", tasks: ["Plan, direct, or coordinate the activities of workers in branches, offices, or departments of establishments such as branch banks, brokerage firms, or credit departments", "Establish and maintain relationships with individual or business customers or provide assistance with problems these customers may encounter", "Communicate with stockholders or other investors to provide information or to raise capital"] },
+      { id: "finmgr-investment", label: "Investment & Capital Management", description: "Managing investments, credit activities, and capital expenditure decisions.", tasks: ["Oversee the flow of cash or financial instruments", "Approve, reject, or coordinate the approval or rejection of lines of credit or commercial, real estate, or personal loans", "Examine, evaluate, or process loan applications"] },
     ],
     skills: [
       { name: "Accounting", cat: "Core Role-Specific Skills" },
@@ -932,10 +940,10 @@ const WORKSHOP_ROLES = {
   "Project Management Specialists": {
     icon: "🗂️", workers: "~900K workers", cat: "biz",
     clusters: [
-      { id: "pm2-planning", label: "Project Planning & Scheduling", description: "Defining scope, developing plans, scheduling activities, and creating timelines." },
-      { id: "pm2-resources", label: "Resource & Budget Management", description: "Managing project budgets, allocating resources, and tracking costs." },
-      { id: "pm2-risk", label: "Risk & Issue Management", description: "Identifying and mitigating project risks and resolving issues." },
-      { id: "pm2-communication", label: "Team Coordination & Communication", description: "Coordinating project teams, facilitating communication, and managing stakeholders." },
+      { id: "pm2-planning", label: "Project Planning & Scheduling", description: "Defining scope, developing plans, scheduling activities, and creating timelines.", tasks: ["Develop or update project plans including information such as objectives, technologies, schedules, funding, and staffing", "Plan, schedule, or coordinate project activities to meet deadlines", "Assign duties or responsibilities to project personnel", "Identify project needs such as resources, staff, or finances by reviewing project objectives and schedules"] },
+      { id: "pm2-resources", label: "Resource & Budget Management", description: "Managing project budgets, allocating resources, and tracking costs.", tasks: ["Monitor costs incurred by project staff to identify budget issues", "Prepare and submit budget estimates, progress reports, or cost tracking reports", "Identify, review, or select vendors or consultants to meet project needs", "Recruit or hire project personnel"] },
+      { id: "pm2-risk", label: "Risk & Issue Management", description: "Identifying and mitigating project risks and resolving issues.", tasks: ["Confer with project personnel to identify and resolve problems", "Request and review project updates to ensure deadlines are met", "Propose, review, or approve modifications to project plans", "Monitor project milestones and deliverables"] },
+      { id: "pm2-communication", label: "Team Coordination & Communication", description: "Coordinating project teams, facilitating communication, and managing stakeholders.", tasks: ["Communicate with key stakeholders to determine project requirements and objectives", "Schedule or facilitate project meetings", "Create project status presentations for delivery to customers or project personnel", "Report project status such as budget, resources, technical issues, or customer satisfaction to managers"] },
     ],
     skills: [
       { name: "Communication", cat: "Foundational & Leadership Skills" },
@@ -963,10 +971,10 @@ const WORKSHOP_ROLES = {
   "Purchasing Agents": {
     icon: "🛒", workers: "~310K workers", cat: "biz",
     clusters: [
-      { id: "purch-sourcing", label: "Procurement & Sourcing", description: "Identifying suppliers, requesting bids, and purchasing goods and services." },
-      { id: "purch-vendor", label: "Vendor Management & Negotiation", description: "Negotiating contracts, managing vendor relationships, and resolving supply issues." },
-      { id: "purch-analysis", label: "Market Research & Cost Analysis", description: "Analyzing price trends, monitoring market conditions, and evaluating trade agreements." },
-      { id: "purch-records", label: "Records, Compliance & Reporting", description: "Maintaining procurement records, preparing reports, and ensuring regulatory compliance." },
+      { id: "purch-sourcing", label: "Procurement & Sourcing", description: "Identifying suppliers, requesting bids, and purchasing goods and services.", tasks: ["Purchase the highest quality merchandise at the lowest possible price and in correct amounts", "Prepare purchase orders, solicit bid proposals, and review requisitions for goods and services", "Research and evaluate suppliers based on price, quality, selection, service, support, availability, reliability, production and distribution capabilities, and the supplier's reputation and history"] },
+      { id: "purch-vendor", label: "Vendor Management & Negotiation", description: "Negotiating contracts, managing vendor relationships, and resolving supply issues.", tasks: ["Negotiate, renegotiate, and administer contracts with suppliers, vendors, and other representatives", "Evaluate and monitor contract performance to ensure compliance with contractual obligations and to determine need for changes", "Confer with staff, users, and vendors to discuss defective or unacceptable goods or services and determine corrective action", "Monitor shipments to ensure that goods come in on time and resolve problems related to undelivered goods"] },
+      { id: "purch-analysis", label: "Market Research & Cost Analysis", description: "Analyzing price trends, monitoring market conditions, and evaluating trade agreements.", tasks: ["Analyze price proposals, financial reports, and other data and information to determine reasonable prices", "Monitor changes affecting supply and demand, tracking market conditions, price trends, or futures markets", "Study sales records and inventory levels of current stock to develop strategic purchasing programs", "Review catalogs, industry periodicals, directories, trade journals, and Internet sites to locate necessary goods and services"] },
+      { id: "purch-records", label: "Records, Compliance & Reporting", description: "Maintaining procurement records, preparing reports, and ensuring regulatory compliance.", tasks: ["Maintain and review computerized or manual records of purchased items, costs, deliveries, product performance, and inventories", "Monitor and follow applicable laws and regulations", "Write and review product specifications, maintaining a working technical knowledge of the goods or services to be purchased", "Formulate policies and procedures for bid proposals and procurement of goods and services"] },
     ],
     skills: [
       { name: "Procurement", cat: "Core Role-Specific Skills" },
@@ -989,10 +997,10 @@ const WORKSHOP_ROLES = {
   "Sales Managers": {
     icon: "🎯", workers: "~400K workers", cat: "biz",
     clusters: [
-      { id: "smgr-strategy", label: "Sales Strategy & Planning", description: "Setting sales goals, developing strategies, and overseeing regional operations." },
-      { id: "smgr-team", label: "Team Management", description: "Directing, training, and evaluating sales staff." },
-      { id: "smgr-performance", label: "Performance Analysis & Reporting", description: "Reviewing sales records, analyzing data, and reporting to executives." },
-      { id: "smgr-customer", label: "Customer & Partner Relations", description: "Resolving customer issues, visiting clients, and managing distribution partnerships." },
+      { id: "smgr-strategy", label: "Sales Strategy & Planning", description: "Setting sales goals, developing strategies, and overseeing regional operations.", tasks: ["Direct and coordinate activities involving sales of manufactured products, services, commodities, real estate, or other subjects of sale", "Assess marketing potential of new and existing store locations considering statistics and expenditures", "Monitor customer preferences to determine focus of sales efforts", "Determine price schedules and discount rates"] },
+      { id: "smgr-team", label: "Team Management", description: "Directing, training, and evaluating sales staff.", tasks: ["Plan and direct staffing, training, and performance evaluations to develop and control sales and service programs", "Oversee regional and local sales managers and their staffs", "Advise dealers and distributors on policies and operating procedures to ensure functional effectiveness of business"] },
+      { id: "smgr-performance", label: "Performance Analysis & Reporting", description: "Reviewing sales records, analyzing data, and reporting to executives.", tasks: ["Review operational records and reports to project sales and determine profitability", "Direct, coordinate, and review sales and service accounting and record-keeping, as well as receiving and shipping", "Prepare budgets and approve budget expenditures"] },
+      { id: "smgr-customer", label: "Customer & Partner Relations", description: "Resolving customer issues, visiting clients, and managing distribution partnerships.", tasks: ["Resolve customer complaints regarding sales and service", "Confer with potential customers regarding equipment needs and advise customers on types of equipment to purchase", "Visit franchised dealers to stimulate interest in establishment or expansion of leasing programs"] },
     ],
     skills: [
       { name: "Account Management", cat: "Core Role-Specific Skills" },
@@ -1017,10 +1025,10 @@ const WORKSHOP_ROLES = {
   "Sales Representatives": {
     icon: "📞", workers: "~1.5M workers", cat: "biz",
     clusters: [
-      { id: "srep-prospecting", label: "Prospecting & Lead Generation", description: "Contacting prospective customers and generating new business opportunities." },
-      { id: "srep-presentations", label: "Customer Presentations & Proposals", description: "Demonstrating products, creating quotes, and preparing sales proposals." },
-      { id: "srep-relationship", label: "Relationship Management", description: "Maintaining client relationships, resolving issues, and ensuring satisfaction." },
-      { id: "srep-admin", label: "Order Processing & Reporting", description: "Processing orders, tracking inventory, and preparing sales reports." },
+      { id: "srep-prospecting", label: "Prospecting & Lead Generation", description: "Contacting prospective customers and generating new business opportunities.", tasks: ["Identify prospective customers using business directories, leads from existing clients, participation in organizations, or trade show or conference attendance", "Contact new or existing customers to discuss how specific products or services can meet their needs", "Visit establishments to evaluate needs or to promote product or service sales", "Initiate sales campaigns to meet sales and production expectations"] },
+      { id: "srep-presentations", label: "Customer Presentations & Proposals", description: "Demonstrating products, creating quotes, and preparing sales proposals.", tasks: ["Prepare sales presentations or proposals to explain product specifications or applications", "Emphasize product features based on analyses of customers' needs and on technical knowledge of product capabilities and limitations", "Select or assist customers in selecting products based on customer needs, product specifications, and applicable regulations", "Quote prices, credit terms, or other bid specifications"] },
+      { id: "srep-relationship", label: "Relationship Management", description: "Maintaining client relationships, resolving issues, and ensuring satisfaction.", tasks: ["Negotiate prices or terms of sales or service agreements", "Provide customers with ongoing technical support", "Inform customers of estimated delivery schedules, service contracts, warranties, or other information pertaining to purchased products", "Answer customers' questions about products, prices, availability, or credit terms"] },
+      { id: "srep-admin", label: "Order Processing & Reporting", description: "Processing orders, tracking inventory, and preparing sales reports.", tasks: ["Complete expense reports, sales reports, or other paperwork", "Maintain customer records using automated systems", "Prepare and submit sales contracts for orders", "Verify customer credit ratings"] },
     ],
     skills: [
       { name: "Customer Service", cat: "Baseline Applied Skills" },
@@ -1045,10 +1053,10 @@ const WORKSHOP_ROLES = {
   "Production and Expediting Clerks": {
     icon: "📋", workers: "~320K workers", cat: "biz",
     clusters: [
-      { id: "prod-scheduling", label: "Production Scheduling & Planning", description: "Coordinating production schedules, workloads, and material flows." },
-      { id: "prod-expediting", label: "Order Tracking & Expediting", description: "Tracking orders, monitoring progress, and following up on delays." },
-      { id: "prod-inventory", label: "Inventory & Materials Coordination", description: "Managing materials, tracking stock levels, and coordinating with suppliers." },
-      { id: "prod-reporting", label: "Documentation & Reporting", description: "Preparing status reports, recording data, and maintaining production records." },
+      { id: "prod-scheduling", label: "Production Scheduling & Planning", description: "Coordinating production schedules, workloads, and material flows.", tasks: ["Revise production schedules when required due to design changes, labor or material shortages, backlogs, or other interruptions", "Plan production commitments or timetables for business units, specific programs, or jobs using sales forecasts", "Establish and prepare product construction directions and locations and information on required tools, materials, equipment, and numbers of workers needed", "Distribute production schedules or work orders to departments"] },
+      { id: "prod-expediting", label: "Order Tracking & Expediting", description: "Tracking orders, monitoring progress, and following up on delays.", tasks: ["Examine documents, materials, or products and monitor work processes to assess completeness, accuracy, and conformance to standards and specifications", "Review documents such as production schedules, work orders, or staffing tables to determine personnel or materials requirements or material priorities", "Arrange for delivery, assembly, or distribution of supplies or parts to expedite flow of materials and meet production schedules", "Confer with establishment personnel, vendors, or customers to coordinate production or shipping activities and to resolve complaints or eliminate delays"] },
+      { id: "prod-inventory", label: "Inventory & Materials Coordination", description: "Managing materials, tracking stock levels, and coordinating with suppliers.", tasks: ["Requisition and maintain inventories of materials or supplies necessary to meet production demands", "Calculate figures such as required amounts of labor or materials, manufacturing costs, or wages using pricing schedules or computers", "Contact suppliers to verify shipment details"] },
+      { id: "prod-reporting", label: "Documentation & Reporting", description: "Preparing status reports, recording data, and maintaining production records.", tasks: ["Record production data including volume produced, consumption of raw materials, or quality control measures", "Compile information such as production rates and progress, materials inventories, or customer information so that status reports can be completed", "Compile and prepare documentation related to production sequences, transportation, personnel schedules, or purchase, maintenance, or repair orders", "Maintain files such as maintenance records, bills of lading, or cost reports"] },
     ],
     skills: [
       { name: "Communication", cat: "Foundational & Leadership Skills" },
@@ -1266,6 +1274,13 @@ function toggleDefs() {
   btn.textContent = open ? 'Definitions ▾' : 'Definitions ▴';
 }
 
+function toggleTasks(btn) {
+  const list = btn.nextElementSibling;
+  const open = btn.classList.contains('open');
+  list.style.display = open ? 'none' : 'block';
+  btn.classList.toggle('open', !open);
+}
+
 function resetAll() {
   APP = { phase:'role', role:null, roleData:null, clusterIdx:0,
           answers:{}, results:{}, constraints:{}, placements:{}, drops:{}, newSkills:[] };
@@ -1409,6 +1424,7 @@ function renderRoutingPhase() {
     <div class="cluster-card">
       <h2>${esc(cluster.label)}</h2>
       <p>${esc(cluster.description)}</p>
+      ${cluster.tasks && cluster.tasks.length ? `<button class="tasks-toggle" onclick="toggleTasks(this)"><span class="tasks-arrow">▶</span> View tasks (${cluster.tasks.length})</button><ul class="tasks-list">${cluster.tasks.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
     </div>
     <div class="questions-wrap">
       <div class="dir-bar">
