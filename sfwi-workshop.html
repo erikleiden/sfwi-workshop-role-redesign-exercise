@@ -62,7 +62,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#EDECEA;min-heigh
 .tasks-toggle:hover{opacity:1}
 .tasks-toggle .tasks-arrow{display:inline-block;transition:transform .15s;font-size:9px;margin-top:1px}
 .tasks-toggle.open .tasks-arrow{transform:rotate(90deg)}
-.tasks-list{margin:6px 0 0 0;padding:0;list-style:none;border-top:1px solid #EBEBE7;display:none}
+.tasks-list-placeholder{display:none}/* tasks-list now always open — see end of CSS */
 .tasks-list li{font-size:11.5px;color:#555;padding:5px 0 5px 14px;border-bottom:1px solid #F4F4F0;line-height:1.4;position:relative}
 .tasks-list li::before{content:'·';position:absolute;left:4px;color:#bbb}
 .tasks-list li:last-child{border-bottom:none}
@@ -240,6 +240,34 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#EDECEA;min-heigh
 
 /* UTILITY */
 .hidden{display:none!important}
+
+/* INTRO PHASE */
+#phase-intro{max-width:760px;margin:0 auto}
+.intro-card{background:#fff;border-radius:10px;box-shadow:0 3px 20px rgba(0,0,0,.12);overflow:hidden}
+.intro-hdr{background:#1A2A4A;color:#fff;padding:30px 36px}
+.intro-hdr h2{font-size:22px;font-weight:700;margin-bottom:8px}
+.intro-hdr p{font-size:14px;opacity:.75;line-height:1.55;max-width:500px}
+.intro-body{padding:28px 36px}
+.intro-what{font-size:13px;color:#444;line-height:1.65;margin-bottom:22px}
+.intro-phases{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px}
+.intro-phase{background:#F5F4F2;border-radius:8px;padding:14px 16px}
+.intro-phase .ph-num{width:26px;height:26px;border-radius:50%;background:#1A2A4A;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-bottom:8px}
+.intro-phase strong{font-size:13px;color:#1A2A4A;display:block;margin-bottom:4px}
+.intro-phase p{font-size:11.5px;color:#666;line-height:1.45}
+.intro-callout{background:#FFF8EE;border-left:3px solid #B85520;padding:12px 16px;border-radius:0 6px 6px 0;font-size:12px;color:#555;line-height:1.55;margin-bottom:24px}
+.intro-callout strong{color:#B85520}
+.btn-begin{background:#1A2A4A;color:#fff;border:none;border-radius:6px;padding:12px 28px;font-size:14px;font-weight:700;cursor:pointer;display:block;width:100%}
+.btn-begin:hover{background:#253d68}
+
+/* Sticky result bar */
+.result-bar{position:sticky;bottom:0;z-index:10;box-shadow:0 -2px 8px rgba(0,0,0,.08)}
+
+/* Change role button in header */
+#btn-change-role{background:none;border:1px solid rgba(255,255,255,.3);color:rgba(255,255,255,.7);font-size:12px;padding:4px 10px;border-radius:4px;cursor:pointer;display:none;white-space:nowrap}
+#btn-change-role:hover{background:rgba(255,255,255,.1)}
+
+/* Tasks list: open by default, scrollable if long */
+.tasks-list{margin:6px 0 0 0;padding:0;list-style:none;border-top:1px solid #EBEBE7;display:block;max-height:220px;overflow-y:auto}
 </style>
 </head>
 <body>
@@ -250,6 +278,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#EDECEA;min-heigh
     <div id="role-badge"></div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
+    <button id="btn-change-role" onclick="changeRole()">← Change Role</button>
     <button id="btn-defs" onclick="toggleDefs()">Definitions ▾</button>
     <div class="phase-stepper">
       <div class="phase-pip active" id="pip1">1 · Role</div>
@@ -279,8 +308,10 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#EDECEA;min-heigh
 </div>
 
 <div class="container">
+  <!-- INTRO -->
+  <div id="phase-intro"></div>
   <!-- PHASE 1 -->
-  <div id="phase-role"></div>
+  <div id="phase-role" style="display:none"></div>
   <!-- PHASE 2 -->
   <div id="phase-routing" style="display:none"></div>
   <!-- PHASE 3 -->
@@ -1117,6 +1148,251 @@ const WORKSHOP_ROLES = {
 };
 </script>
 <script>
+// ─── SKILL DEFINITIONS ────────────────────────────────────────
+const SKILL_DEFS = {
+  "Access Controls":"Managing who can view or use resources in a computing environment.",
+  "Account Management":"Maintaining and growing relationships with a portfolio of client or vendor accounts.",
+  "Account Reconciliation":"Comparing internal financial records against external statements to ensure accuracy.",
+  "Accountability":"Taking ownership of actions and outcomes; following through on commitments.",
+  "Accounting":"Recording, classifying, and summarizing financial transactions.",
+  "Accounts Payable":"Managing money owed by an organization to its suppliers and creditors.",
+  "Accounts Receivable":"Tracking and collecting money owed to an organization by customers.",
+  "Ad Hoc Analysis":"Performing unplanned data analysis to answer a specific, immediate business question.",
+  "Administrative Support":"Providing clerical and organizational assistance to a team or executive.",
+  "Agile Methodology":"Iterative project framework emphasizing flexibility, collaboration, and rapid delivery.",
+  "Algorithms":"Step-by-step procedures for solving computational problems or processing data.",
+  "Analytical Skills":"Ability to collect, interpret, and draw conclusions from complex information.",
+  "Application Security":"Protecting software applications from vulnerabilities and unauthorized access.",
+  "Applied Mathematics":"Using mathematical methods to solve practical, real-world problems.",
+  "Auditing":"Systematically examining records or processes to verify accuracy and compliance.",
+  "Bagging Merchandise":"Properly packaging customer purchases at point of sale.",
+  "Benefits Administration":"Managing employee benefit programs including health, retirement, and leave.",
+  "Benefits Enrollment Processes":"Guiding employees through selecting and enrolling in benefits plans.",
+  "Big Data":"Processing and analyzing extremely large datasets that exceed conventional database tools.",
+  "Bill Of Lading":"Preparing and managing the shipping document that details freight contents and delivery terms.",
+  "Billing":"Generating and sending invoices to customers for goods or services rendered.",
+  "Blueprinting":"Reading and interpreting technical drawings and engineering specifications.",
+  "Budgeting":"Planning and allocating financial resources across a period or project.",
+  "Business Administration":"Overseeing day-to-day operations and coordinating organizational functions.",
+  "Business Development":"Identifying and pursuing opportunities to grow revenue or expand market reach.",
+  "Business Process":"Designing, analyzing, and improving the sequences of tasks that produce business outcomes.",
+  "Business Requirements":"Gathering and documenting what a business needs a system or project to deliver.",
+  "Business To Business":"Managing sales or service relationships between companies rather than end consumers.",
+  "CI/CD":"Continuous integration and delivery pipelines that automate software builds and deployments.",
+  "Calibration":"Adjusting measuring instruments or equipment to ensure accurate, reliable readings.",
+  "Call Center Experience":"Operating effectively in a high-volume inbound/outbound phone support environment.",
+  "Cash Handling":"Accurately processing cash transactions and maintaining till accuracy.",
+  "Cash Register":"Operating point-of-sale systems to process customer transactions.",
+  "Change Management":"Leading people and organizations through transitions with minimal disruption.",
+  "Clerical Works":"Performing routine administrative tasks such as filing, data entry, and correspondence.",
+  "Coaching":"Developing individual performance through guidance, feedback, and goal-setting conversations.",
+  "Cold Calling":"Proactively contacting prospective customers without a prior relationship.",
+  "Communication":"Clearly conveying information verbally and in writing across different audiences.",
+  "Computer Literacy":"Proficiency with basic computer applications and digital tools.",
+  "Construction":"Knowledge of building methods, materials, and construction site operations.",
+  "Contract Management":"Overseeing the creation, execution, and compliance of legal agreements.",
+  "Contract Review":"Examining contract terms for accuracy, risk, and alignment with business requirements.",
+  "Corrective And Preventive Action (CAPA)":"Identifying root causes of issues and implementing fixes to prevent recurrence.",
+  "Corrective Maintenance":"Repairing equipment or systems after a failure has occurred.",
+  "Cross-Selling":"Recommending related or complementary products to an existing customer.",
+  "Crowd Control":"Managing the flow and behavior of large groups of people safely.",
+  "Customer Complaint Resolution":"Handling and resolving customer grievances to restore satisfaction.",
+  "Customer Engagement":"Building meaningful interactions that deepen customer loyalty and relationship.",
+  "Customer Inquiries":"Responding to customer questions accurately and in a timely manner.",
+  "Customer Relationship Management":"Using systems and strategies to manage all customer interactions over time.",
+  "Customer Service":"Providing assistance and support to customers before, during, and after purchase.",
+  "Customer Success Management":"Proactively ensuring customers achieve their goals with a product or service.",
+  "Customer Support":"Resolving technical or service issues raised by customers.",
+  "Cycle Counting":"Regularly counting subsets of inventory to maintain ongoing stock accuracy.",
+  "Data Analysis":"Examining datasets to identify patterns, trends, and actionable insights.",
+  "Data Entry":"Accurately inputting information into computer systems or databases.",
+  "Data Modeling":"Structuring and organizing data to reflect real-world relationships and support analysis.",
+  "Data Visualization":"Presenting data graphically to communicate findings clearly and quickly.",
+  "De-escalation Techniques":"Calming tense or hostile interactions to prevent conflict from escalating.",
+  "Debugging":"Identifying and fixing errors or defects in software code.",
+  "Decision Making":"Selecting the best course of action from alternatives using available information.",
+  "Defensive Driving":"Operating a vehicle using techniques that actively reduce accident risk.",
+  "DevOps":"Combining software development and IT operations practices to shorten delivery cycles.",
+  "Dry Van Truck Operation":"Operating enclosed trailer trucks for long-haul or regional freight transport.",
+  "Electrical Diagnostics And Repairs":"Identifying and fixing faults in electrical systems or equipment.",
+  "Electrical Systems":"Understanding how electrical circuits, components, and systems function.",
+  "Electrical/Electronic Troubleshooting":"Diagnosing and resolving issues in electrical or electronic equipment.",
+  "Emergency Response":"Responding effectively to accidents, injuries, or crises per established protocols.",
+  "Employee Engagement":"Fostering conditions that motivate and commit employees to their work.",
+  "Employee Onboarding":"Integrating new hires into the organization with orientation and early-stage support.",
+  "Employee Relations":"Managing the relationship between the organization and its workforce.",
+  "Equipment Maintenance":"Performing routine upkeep to keep machinery and tools in working condition.",
+  "Ethical Standards And Conduct":"Upholding principles of honesty, fairness, and integrity in all professional actions.",
+  "Finance":"Managing money, investments, and financial instruments within an organization.",
+  "Financial Analysis":"Evaluating financial data to inform business decisions and assess performance.",
+  "Financial Data":"Working with numerical records of transactions, statements, and forecasts.",
+  "Financial Management":"Planning, organizing, and controlling financial resources to meet organizational goals.",
+  "Financial Planning":"Projecting future financial needs and developing strategies to meet them.",
+  "Financial Statements":"Preparing and interpreting income statements, balance sheets, and cash flow reports.",
+  "First Aid":"Providing immediate care for injuries or illness before professional help arrives.",
+  "Forecasting":"Predicting future outcomes using historical data and analytical models.",
+  "Freight Handling":"Loading, unloading, and managing the movement of goods in transit.",
+  "Front Office":"Managing reception, scheduling, and customer-facing administrative functions.",
+  "General Ledger":"Maintaining the master record of all financial transactions in an organization.",
+  "General Mathematics":"Applying basic arithmetic and numerical reasoning to everyday work tasks.",
+  "Git (Version Control System)":"Tracking and managing changes to source code using the Git system.",
+  "Go-to-Market Strategy":"Planning how to launch a product or enter a market to maximize adoption.",
+  "Governance":"Establishing policies and accountability structures to guide organizational decision-making.",
+  "Greeting Customers":"Welcoming customers warmly and directing them to the right resource or area.",
+  "HVAC":"Installing, maintaining, and repairing heating, ventilation, and air conditioning systems.",
+  "Human Resource Management":"Overseeing the full employee lifecycle from hiring through separation.",
+  "Human Resources Information System (HRIS)":"Using software platforms to manage HR data, records, and workflows.",
+  "Inbound Calls":"Handling incoming customer or client calls efficiently and professionally.",
+  "Incident Reporting":"Documenting workplace accidents, safety issues, or security events.",
+  "Incident Response":"Containing, investigating, and recovering from cybersecurity incidents.",
+  "Influencing Skills":"Persuading others to align with a viewpoint or course of action without formal authority.",
+  "Information Systems Security":"Protecting information systems from unauthorized access, disruption, or damage.",
+  "Innovation":"Generating and implementing new ideas to improve products, processes, or outcomes.",
+  "Inventory Control":"Maintaining accurate stock levels to meet demand without excess or shortage.",
+  "Inventory Management":"Tracking and managing the full lifecycle of stock from receipt to use.",
+  "Inventory Staging":"Organizing inventory in designated areas to streamline order fulfillment.",
+  "Invoicing":"Creating and sending bills to clients for goods or services delivered.",
+  "Issuing Receipts":"Generating transaction records for customers at point of sale.",
+  "Issuing Refunds":"Processing returns and reimbursements to customers accurately.",
+  "Lead Generation":"Identifying and qualifying prospective customers for the sales pipeline.",
+  "Leadership":"Guiding, motivating, and developing others to achieve shared goals.",
+  "Lifting Ability":"Safely moving heavy objects as a regular physical requirement of the job.",
+  "Loading And Unloading":"Moving freight onto or off vehicles, conveyors, or storage locations.",
+  "Lock Out / Tag Out":"Safety procedure to isolate equipment from energy sources before maintenance.",
+  "Logistics":"Coordinating the movement and storage of goods through a supply chain.",
+  "Logistics Management":"Planning and overseeing transportation, warehousing, and distribution operations.",
+  "Loss Prevention":"Identifying and reducing theft, fraud, and shrinkage in retail environments.",
+  "Machining":"Operating machine tools to cut, shape, or finish metal or other materials.",
+  "Management":"Coordinating people, resources, and processes to achieve organizational objectives.",
+  "Manufacturing Processes":"Understanding production methods used to convert raw materials into finished goods.",
+  "Map Reading":"Interpreting maps and routing information for navigation or logistics planning.",
+  "Market Research":"Gathering and analyzing information about markets, competitors, and customers.",
+  "Marketing":"Promoting products or services to attract and retain customers.",
+  "Material Handling":"Moving, storing, and controlling materials and products throughout a facility.",
+  "Mechanical Inspection":"Examining machinery or components to verify they meet design specifications.",
+  "Mechanical Systems":"Understanding how mechanical components and assemblies function together.",
+  "Mentorship":"Sharing knowledge and experience to support another person's professional growth.",
+  "Merchandising":"Displaying and arranging products to maximize sales appeal and customer experience.",
+  "Microsoft Excel":"Using Excel for data organization, calculation, and analysis.",
+  "Microsoft Office":"Proficiency with Word, Excel, PowerPoint, and other Microsoft Office applications.",
+  "Mobile Devices":"Operating and troubleshooting smartphones and tablets in a professional context.",
+  "Month-End Closing":"Completing accounting procedures to finalize financial records at period end.",
+  "Multitasking":"Managing multiple responsibilities simultaneously without sacrificing quality.",
+  "Negotiation":"Reaching mutually acceptable agreements through structured discussion.",
+  "Operating Systems":"Working proficiently with Windows, Linux, or other OS environments.",
+  "Operations":"Running the day-to-day activities that keep a business or function operating.",
+  "Operations Management":"Overseeing production, service delivery, and resource use for maximum efficiency.",
+  "Order Entry":"Accurately recording customer orders into an order management system.",
+  "Order Fulfillment":"Completing the full process from order receipt through delivery to the customer.",
+  "Order Picking":"Selecting and gathering items from inventory to fill a customer order.",
+  "Order Processing":"Handling the sequence of steps from order receipt through shipment.",
+  "Organizational Skills":"Structuring tasks, time, and information to work efficiently.",
+  "Outside Sales":"Selling products or services through in-person visits to prospects and clients.",
+  "Package Delivery":"Safely transporting and handing off packages to intended recipients.",
+  "Packaging And Labeling":"Preparing products for shipment with appropriate wrapping and identification.",
+  "Painting":"Applying protective or decorative coatings to surfaces.",
+  "Pallet Jacks":"Operating manual or powered pallet jacks to move loaded pallets.",
+  "Palletizing":"Stacking and securing products on pallets for storage or shipment.",
+  "Patrolling":"Conducting regular rounds of a facility or area to monitor and ensure security.",
+  "Payroll Processing":"Calculating and distributing employee compensation accurately and on schedule.",
+  "Performance Management":"Setting goals, assessing progress, and developing employees throughout the year.",
+  "Physical Inventory":"Manually counting all stock on hand to verify system records.",
+  "Physical Security":"Protecting facilities, equipment, and personnel from physical threats.",
+  "Physical Stamina":"Sustaining physical effort over extended periods as required by job duties.",
+  "Planning":"Setting objectives and determining the steps and resources needed to achieve them.",
+  "Point Of Sale":"Operating checkout systems to complete and record customer transactions.",
+  "Power BI":"Building interactive reports and dashboards using Microsoft Power BI.",
+  "Pre-Trip And Post-Trip Vehicle Inspections":"Checking a vehicle before and after each trip to verify safety and regulatory compliance.",
+  "Presentations":"Designing and delivering information to an audience clearly and persuasively.",
+  "Preventive Maintenance":"Scheduled upkeep performed to prevent equipment failure before it occurs.",
+  "Price Checks":"Verifying product prices to ensure accuracy at point of sale.",
+  "Price Negotiation":"Reaching agreement on cost terms with suppliers or customers.",
+  "Prioritization":"Determining the relative importance of tasks to allocate time and effort effectively.",
+  "Problem Solving":"Identifying root causes and developing effective solutions to challenges.",
+  "Process Improvement":"Analyzing and redesigning workflows to increase efficiency and quality.",
+  "Procurement":"Sourcing, purchasing, and managing the supply of goods and services.",
+  "Product Inspection":"Examining products to verify they meet quality and specification standards.",
+  "Product Knowledge":"Deep understanding of a product's features, benefits, and competitive position.",
+  "Product Lifecycle Management":"Managing a product from concept through design, launch, and end-of-life.",
+  "Product Marketing":"Positioning and promoting a product to target customer segments.",
+  "Product Requirements":"Documenting what a product must do to satisfy user and business needs.",
+  "Product Strategy":"Setting the long-term vision and roadmap for a product or product line.",
+  "Product Testing":"Evaluating a product against requirements to identify defects before release.",
+  "Production Equipment":"Operating and maintaining machinery used in a manufacturing process.",
+  "Production Line":"Managing or working effectively within an assembly or manufacturing workflow.",
+  "Profit And Loss (P&L) Management":"Overseeing revenues and expenses to drive the financial performance of a business unit.",
+  "Project Closure":"Completing final deliverables, documentation, and reviews to formally end a project.",
+  "Project Controls":"Monitoring cost, schedule, and scope to keep a project on track.",
+  "Project Documentation":"Creating and maintaining records that capture project decisions, changes, and progress.",
+  "Project Implementation":"Executing project plans and coordinating resources to deliver intended outcomes.",
+  "Project Management":"Planning, executing, and closing projects within agreed scope, budget, and timeline.",
+  "Project Performance":"Measuring and reporting project progress against defined success criteria.",
+  "Project Planning":"Defining objectives, milestones, resources, and timelines for a project.",
+  "Project Schedules":"Creating and maintaining timelines that sequence project tasks and dependencies.",
+  "Project Scoping":"Defining the boundaries, deliverables, and exclusions of a project at the outset.",
+  "Property Maintenance":"Keeping buildings and grounds in safe, clean, and functional condition.",
+  "Python (Programming Language)":"Writing and executing Python code for data analysis, automation, or software development.",
+  "Quality Assurance":"Ensuring processes are followed correctly to prevent defects before they occur.",
+  "Quality Control":"Inspecting outputs to detect and correct defects after production.",
+  "Quality Management Systems":"Structured frameworks (e.g., ISO 9001) for documenting and continuously improving quality.",
+  "Relationship Building":"Developing trust and rapport with colleagues, clients, or partners over time.",
+  "Request For Quotation (RFQ)":"Soliciting and evaluating pricing proposals from potential vendors.",
+  "Research":"Gathering and synthesizing information to inform decisions or deepen understanding.",
+  "Retail Management":"Overseeing store operations, staff, and performance to meet sales goals.",
+  "Retail Operations":"Managing day-to-day functions of a retail store including staffing and inventory.",
+  "Retail Sales":"Selling products directly to consumers in a store or retail environment.",
+  "Risk Analysis":"Identifying and evaluating potential threats to a project or organization.",
+  "Risk Management":"Developing strategies to mitigate, transfer, or accept identified risks.",
+  "SAP Applications":"Using SAP enterprise software for business process management and data reporting.",
+  "SQL (Programming Language)":"Querying and managing data stored in relational databases using SQL.",
+  "Safety Standards":"Applying OSHA or industry-specific guidelines to maintain a safe workplace.",
+  "Sales":"Persuading prospective buyers to purchase a product or service.",
+  "Sales Prospecting":"Identifying and qualifying new potential customers for the sales pipeline.",
+  "Sales Territory Management":"Planning and managing coverage of an assigned geographic or account-based area.",
+  "Sanitation":"Maintaining cleanliness and hygiene standards in a work environment.",
+  "Scalability":"Designing systems or processes that can handle growth without degrading performance.",
+  "Scheduling":"Organizing tasks, resources, or appointments into a workable timeline.",
+  "Schematic Reading":"Interpreting technical diagrams of electrical, mechanical, or piping systems.",
+  "Scripting":"Writing lightweight programs to automate repetitive tasks.",
+  "Security Controls":"Implementing safeguards that protect systems and data from security threats.",
+  "Security Information And Event Management (SIEM)":"Using tools to aggregate and analyze security event logs for real-time threat detection.",
+  "Security Management":"Overseeing physical and information security programs for an organization.",
+  "Security Policies":"Establishing rules and procedures that govern how security is maintained.",
+  "Security Systems":"Installing and managing surveillance, access control, and alarm infrastructure.",
+  "Selling Techniques":"Applying proven methods to guide prospects through a sales cycle.",
+  "Site Security":"Protecting a physical location from unauthorized access or security incidents.",
+  "Smartphone Operation":"Using a smartphone effectively for professional communication and work tasks.",
+  "Sorting":"Organizing items by category, size, or destination for efficient processing.",
+  "Stakeholder Management":"Identifying, engaging, and communicating with people who have a stake in a project.",
+  "Statistics":"Applying statistical methods to collect, analyze, and interpret quantitative data.",
+  "Stocking Merchandise":"Replenishing store shelves or storage areas with inventory.",
+  "Strategic Planning":"Setting long-term organizational goals and defining the initiatives to achieve them.",
+  "Strategic Sourcing":"Systematically evaluating and selecting suppliers to optimize total value.",
+  "Supervision":"Directing and monitoring the work of a team to ensure performance standards are met.",
+  "Supplier Identification And Selection":"Finding and evaluating potential vendors against defined criteria.",
+  "Supplier Performance Management":"Tracking and holding vendors accountable to agreed service and quality levels.",
+  "Supplier Relationship Management":"Developing collaborative, long-term partnerships with key vendors.",
+  "Supply Chain":"Understanding the end-to-end flow of goods from raw materials to end customer.",
+  "Supply Chain Management":"Planning and controlling supply chain activities to maximize efficiency and service.",
+  "Teamwork":"Collaborating effectively with others toward shared goals.",
+  "Technical Documentation":"Writing clear instructions, specifications, or reference materials for technical systems.",
+  "Telephone Skills":"Handling phone calls professionally and resolving customer issues efficiently.",
+  "Timelines":"Creating and managing schedules that sequence work toward a deadline.",
+  "Training And Development":"Designing and delivering learning experiences to build employee capability.",
+  "Troubleshooting (Problem Solving)":"Diagnosing and resolving technical or operational problems systematically.",
+  "Unit Testing":"Writing and running automated tests that verify individual components of code work correctly.",
+  "User Story":"Writing concise descriptions of a software feature from the perspective of the end user.",
+  "Variance Analysis":"Comparing actual results to planned figures and explaining the differences.",
+  "Vehicle Maintenance":"Performing routine inspections and repairs to keep vehicles in roadworthy condition.",
+  "Vulnerability Management":"Identifying, assessing, and remediating security weaknesses in systems.",
+  "Warehouse Management":"Overseeing the receipt, storage, and dispatch of goods in a warehouse.",
+  "Warehouse Operations":"Performing day-to-day tasks in a warehouse including picking, packing, and shipping.",
+  "Warehousing":"Storing goods safely and efficiently in a warehouse facility.",
+  "Workflow Management":"Designing and optimizing the sequence of steps in a business process.",
+  "Workforce Planning":"Forecasting staffing needs and planning to ensure the right talent is available.",
+  "Writing":"Producing clear, accurate, and professional written communications.",
+};
+
 // ─── STATE ────────────────────────────────────────────────────
 let APP = {
   phase: 'role',
@@ -1289,19 +1565,26 @@ function currentFloorLevel(answers) {
 // ─── PHASE CONTROL ────────────────────────────────────────────
 function showPhase(p) {
   APP.phase = p;
-  document.getElementById('phase-role').style.display = p==='role' ? 'block' : 'none';
+  document.getElementById('phase-intro').style.display   = p==='intro'   ? 'block' : 'none';
+  document.getElementById('phase-role').style.display    = p==='role'    ? 'block' : 'none';
   document.getElementById('phase-routing').style.display = p==='routing' ? 'block' : 'none';
-  document.getElementById('phase-skills').style.display = p==='skills' ? 'block' : 'none';
-  document.getElementById('pip1').className = 'phase-pip' + (p==='role' ? ' active' : ' done');
+  document.getElementById('phase-skills').style.display  = p==='skills'  ? 'block' : 'none';
+  const inApp = p !== 'intro';
+  document.getElementById('pip1').className = 'phase-pip' + (p==='role' ? ' active' : (inApp && p!=='role') ? ' done' : '');
   document.getElementById('pip2').className = 'phase-pip' + (p==='routing' ? ' active' : p==='skills' ? ' done' : '');
   document.getElementById('pip3').className = 'phase-pip' + (p==='skills' ? ' active' : '');
-  document.getElementById('btn-reset').style.display = p==='role' ? 'none' : '';
-  // Role name badge — show when past role selection
+  document.getElementById('btn-reset').style.display = (p==='role'||p==='intro') ? 'none' : '';
+  // Role name badge
   const rb = document.getElementById('role-badge');
-  if (rb) { rb.textContent = APP.role || ''; rb.style.display = (p !== 'role' && APP.role) ? 'block' : 'none'; }
-  // Definitions button — only visible during routing/skills
+  if (rb) { rb.textContent = APP.role || ''; rb.style.display = (p !== 'role' && p !== 'intro' && APP.role) ? 'block' : 'none'; }
+  // Definitions button
   const db = document.getElementById('btn-defs');
-  if (db) db.style.display = p === 'role' ? 'none' : 'inline-block';
+  if (db) db.style.display = (p==='routing'||p==='skills') ? 'inline-block' : 'none';
+  // Change-role button — visible in routing and skills phases
+  const crb = document.getElementById('btn-change-role');
+  if (crb) crb.style.display = (p==='routing'||p==='skills') ? 'inline-block' : 'none';
+  saveState();
+  if (p==='intro') renderIntroPhase();
   if (p==='routing') renderRoutingPhase();
   if (p==='skills') renderSkillSortPhase();
 }
@@ -1346,14 +1629,93 @@ function setFateOverride(skillName, value) {
   } else {
     APP.fateOverrides[skillName] = value;
   }
+  saveState();
   updateSummary();
 }
 
 function resetAll() {
+  APP = { phase:'intro', role:null, roleData:null, clusterIdx:0,
+          answers:{}, results:{}, constraints:{}, placements:{}, drops:{}, newSkills:[], fateOverrides:{} };
+  dragDropInitialized = false;
+  try { localStorage.removeItem('sfwi-workshop-state'); } catch(e) {}
+  showPhase('intro');
+}
+
+function changeRole() {
+  const hasWork = APP.answers && Object.keys(APP.answers).length > 0;
+  if (hasWork && !confirm('Going back will reset your routing and skill sort progress. Continue?')) return;
   APP = { phase:'role', role:null, roleData:null, clusterIdx:0,
           answers:{}, results:{}, constraints:{}, placements:{}, drops:{}, newSkills:[], fateOverrides:{} };
   dragDropInitialized = false;
+  try { localStorage.removeItem('sfwi-workshop-state'); } catch(e) {}
+  renderRolePhase();
   showPhase('role');
+}
+
+function saveState() {
+  try {
+    if (!APP.role) return;
+    const s = { phase:APP.phase, role:APP.role, clusterIdx:APP.clusterIdx,
+                answers:APP.answers, results:APP.results, constraints:APP.constraints,
+                placements:APP.placements, drops:APP.drops, newSkills:APP.newSkills,
+                fateOverrides:APP.fateOverrides };
+    localStorage.setItem('sfwi-workshop-state', JSON.stringify(s));
+  } catch(e) {}
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem('sfwi-workshop-state');
+    if (!raw) return false;
+    const s = JSON.parse(raw);
+    if (!s.role || !WORKSHOP_ROLES[s.role]) return false;
+    APP.role = s.role;
+    APP.roleData = WORKSHOP_ROLES[s.role];
+    APP.clusterIdx = s.clusterIdx || 0;
+    APP.answers = s.answers || {};
+    APP.results = s.results || {};
+    APP.constraints = s.constraints || {};
+    APP.placements = s.placements || {};
+    APP.drops = s.drops || {};
+    APP.newSkills = s.newSkills || [];
+    APP.fateOverrides = s.fateOverrides || {};
+    return s.phase || 'routing';
+  } catch(e) { return false; }
+}
+
+function renderIntroPhase() {
+  document.getElementById('phase-intro').innerHTML = `
+    <div class="intro-card">
+      <div class="intro-hdr">
+        <h2>AI Routing Workshop</h2>
+        <p>A structured framework for deciding where humans stay in the loop — and how AI integration reshapes the skills that matter.</p>
+      </div>
+      <div class="intro-body">
+        <p class="intro-what">For any role, this exercise walks you through two decisions: first, determining the appropriate level of AI autonomy for each task cluster; then mapping how those decisions affect every skill in the role. The output is a routing rationale and a before/after skill picture you can actually use.</p>
+        <div class="intro-phases">
+          <div class="intro-phase">
+            <div class="ph-num">1</div>
+            <strong>Select a Role</strong>
+            <p>Choose from 30 occupations across four workforce sectors — from HR Specialists to Truck Drivers.</p>
+          </div>
+          <div class="intro-phase">
+            <div class="ph-num">2</div>
+            <strong>Route Task Clusters</strong>
+            <p>Answer 8 structured questions per cluster. The framework determines whether each cluster should be Human-Led, HITL, HOTL, or Full Auto — and identifies the binding constraint.</p>
+          </div>
+          <div class="intro-phase">
+            <div class="ph-num">3</div>
+            <strong>Sort Skills</strong>
+            <p>Drag each skill into the cluster where it applies most. See live how AI integration deepens, sustains, or displaces each skill.</p>
+          </div>
+        </div>
+        <div class="intro-callout">
+          <strong>Note on variability:</strong> Answers will differ by company, industry, and regulatory environment. The same task can have different stakes in financial services vs. retail, or different compliance requirements across jurisdictions. Use the tool to structure your specific context, not to generate universal conclusions.
+        </div>
+        <button class="btn-begin" onclick="showPhase('role')">Select a Role →</button>
+      </div>
+    </div>
+  `;
 }
 
 // ─── PHASE 1: ROLE SELECTION ──────────────────────────────────
@@ -1492,7 +1854,7 @@ function renderRoutingPhase() {
     <div class="cluster-card">
       <h2>${esc(cluster.label)}</h2>
       <p>${esc(cluster.description)}</p>
-      ${cluster.tasks && cluster.tasks.length ? `<button class="tasks-toggle" onclick="toggleTasks(this)"><span class="tasks-arrow">▶</span> View tasks (${cluster.tasks.length})</button><ul class="tasks-list">${cluster.tasks.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
+      ${cluster.tasks && cluster.tasks.length ? `<button class="tasks-toggle open" onclick="toggleTasks(this)"><span class="tasks-arrow">▶</span> Tasks (${cluster.tasks.length})</button><ul class="tasks-list">${cluster.tasks.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
     </div>
     <div class="questions-wrap">
       <div class="dir-bar">
@@ -1513,6 +1875,7 @@ function renderRoutingPhase() {
 function selectAnswer(clusterId, qId, score) {
   if (!APP.answers[clusterId]) APP.answers[clusterId] = {};
   APP.answers[clusterId][qId] = score;
+  saveState();
   renderRoutingPhase();
 }
 
@@ -1538,7 +1901,7 @@ function nextCluster() {
 }
 
 function prevCluster() {
-  if (APP.clusterIdx > 0) { APP.clusterIdx--; renderRoutingPhase(); }
+  if (APP.clusterIdx > 0) { APP.clusterIdx--; saveState(); renderRoutingPhase(); }
 }
 
 // ─── PHASE 3: SKILL SORT ──────────────────────────────────────
@@ -1566,12 +1929,14 @@ function makePill(name, cat, opts) {
     </span>`;
   }
   const gapCls = opts?.gap ? ' gap-pill' : '';
+  const def = SKILL_DEFS?.[name] || '';
   return `<div class="skill-pill ${catCls}${gapCls}${droppedCls}"
     id="${sid}"
     draggable="true"
     data-skill="${esc(name)}"
     data-cat="${esc(cat||'')}"
-    data-gap="${opts?.gap ? '1' : '0'}">
+    data-gap="${opts?.gap ? '1' : '0'}"
+    title="${esc(def)}">
     <span style="flex:1">${esc(name)}</span>
     ${confirmHtml}
   </div>`;
@@ -1678,7 +2043,7 @@ function renderSkillSortPhase() {
     <div class="transversal-zone">
       <div class="transversal-zone-hdr">
         <h3>Foundational / Transversal</h3>
-        <span>Cross-cutting skills that apply across all clusters — not tied to any single task group</span>
+        <span>Cross-cutting skills that apply across all clusters — their fate is not determined by any single routing decision and should be prioritized regardless of AI adoption</span>
       </div>
       <div class="transversal-drop-zone cluster-drop-zone" data-cid="transversal">${transversalPillsHtml}</div>
     </div>
@@ -1755,7 +2120,7 @@ function updateSummary() {
         return 'Potential Drop';
       })();
       fateCell = `<select class="fate-select ${selCls}" onchange="setFateOverride('${esc(s.name)}',this.value)">
-        <option value="" ${override===''?'selected':''}>Auto (${esc(autoFateLabel)})</option>
+        <option value="" ${override===''?'selected':''}>Suggested: ${esc(autoFateLabel)}</option>
         <option value="deepens" ${override==='deepens'?'selected':''}>Deepens</option>
         <option value="persists" ${override==='persists'?'selected':''}>Persists</option>
         <option value="potential-drop" ${override==='potential-drop'?'selected':''}>Potential Drop</option>
@@ -1924,7 +2289,10 @@ function downloadReport() {
   .legend strong{color:#1A2A4A}
   .legend ul{margin:6px 0 0 16px;line-height:1.9}
   .footer{margin-top:24px;font-size:11px;color:#bbb;text-align:center;padding-top:16px;border-top:1px solid #eee}
-  @media print{body{margin:0;padding:16px}.rpt-header{border-radius:0}}
+  .print-bar{margin-top:20px;text-align:right}
+  .btn-print{background:#1A2A4A;color:#fff;border:none;border-radius:5px;padding:9px 20px;font-size:12px;font-weight:600;cursor:pointer}
+  .btn-print:hover{background:#253d68}
+  @media print{body{margin:0;padding:16px}.rpt-header{border-radius:0}.print-bar{display:none}}
 </style></head>
 <body>
 <div class="rpt-header">
@@ -1954,6 +2322,7 @@ function downloadReport() {
     </ul>
   </div>
   <div class="footer">SFWI AI Routing Workshop &nbsp;·&nbsp; Burning Glass Institute</div>
+  <div class="print-bar"><button class="btn-print" onclick="window.print()">Print / Save as PDF</button></div>
 </div>
 </body></html>`;
 
@@ -1980,6 +2349,7 @@ function toggleDrop(skillName, checked) {
     if (checked) pill.classList.add('dropped');
     else pill.classList.remove('dropped');
   }
+  saveState();
   updateSummary();
 }
 
@@ -2010,6 +2380,7 @@ function commitGap(clusterId) {
   }
   inp.value = '';
   document.getElementById('gap-input-' + clusterId).classList.add('hidden');
+  saveState();
   updateSummary();
 }
 
@@ -2092,6 +2463,7 @@ function movePill(skillName, targetCid, targetZone) {
     }
   }
 
+  saveState();
   updateSummary();
 }
 
@@ -2108,6 +2480,12 @@ function esc(str) {
 
 // ─── INIT ─────────────────────────────────────────────────────
 renderRolePhase();
+const _savedPhase = loadState();
+if (_savedPhase && _savedPhase !== 'intro') {
+  showPhase(_savedPhase);
+} else {
+  showPhase('intro');
+}
 </script>
 </body>
 </html>
